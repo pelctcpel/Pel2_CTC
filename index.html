@@ -49,6 +49,9 @@
                     <option value="Dioq">Dioq (Implantes/Trabalho)</option>
                     <option value="Jurídico">Jurídico</option>
                     <option value="Social">Social</option>
+                    <option value="Pedagogia">Pedagogia</option>
+                    <option value="Enfermaria">Enfermaria</option>
+                    <option value="Psicologia">Psicologia</option>
                     <option value="Direção">Direção</option>
                 </select>
                 
@@ -63,7 +66,7 @@
             </div>
         </div>
 
-        <!-- SISTEMA PRINCIPAL (Libera após o login) -->
+        <!-- SISTEMA PRINCIPAL (Libera após o login com validação) -->
         <div id="sistemaPrincipal" class="oculto">
             
             <!-- BLOCO DE INCLUSÃO (Liberado para todos os setores) -->
@@ -99,6 +102,7 @@
             <div class="bloco">
                 <h2>Presos Cadastrados / Status das Avaliações</h2>
                 
+                <!-- Barra de Ações Rápidas com Filtro Seguro por Select -->
                 <div style="display: flex; gap: 10px; margin-bottom: 15px; flex-wrap: wrap;" class="no-print">
                     <select id="filtroMemorando" onchange="filtrarPorMemorando()" style="flex: 1; margin-bottom: 0; min-width: 250px;">
                         <option value="">🔍 Filtrar por número de memorando... (Exibir Todos)</option>
@@ -127,7 +131,7 @@
                 <div style="overflow-x: auto;">
                     <table id="tabelaMaster">
                         <thead id="cabecalhoTabela">
-                            <!-- Inserido via JavaScript -->
+                            <!-- Inserido dinamicamente via JavaScript -->
                         </thead>
                         <tbody id="corpoTabela">
                             <tr>
@@ -171,6 +175,7 @@
         </div>
     </div>
 
+    <!-- Sincroniza o arquivo de controle inteligente de rotas -->
     <script src="script.js"></script>
 </body>
 </html>
