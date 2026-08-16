@@ -189,3 +189,31 @@ th { background: #cbd5e1; color: #1e293b; font-weight: bold; }
     font-weight: 600;
     border: 1px solid #e2e8f0;
 }
+    /* ... seus estilos antigos que já estavam aí ... */
+
+    /* COLADO AQUI NO FINAL: CONTAINER DE TABELA RESPONSIVA */
+    .tabela-container {
+        width: 100%;
+        overflow-x: auto;
+        -webkit-overflow-scrolling: touch;
+        margin-top: 15px;
+        border-radius: 8px;
+        box-shadow: 0 2px 5px rgba(0,0,0,0.05);
+    }
+
+    /* AJUSTES PARA TELAS PEQUENAS (CELULAR) */
+    @media screen and (max-width: 768px) {
+        input, select, textarea, button {
+            width: 100% !important;
+            box-sizing: border-box;
+        }
+        th, td {
+            white-space: nowrap; 
+            font-size: 0.85rem !important;
+            padding: 8px 10px !important;
+        }
+        td select, td textarea, td button {
+            min-width: 120px;
+        }
+    }
+</style>
