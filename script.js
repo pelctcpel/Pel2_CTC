@@ -3,7 +3,7 @@
 // ==========================================================================
 const SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbxIjQ02GCL7KS3PQkXxQkasaVX8_lgypnZQeZKcdnXfN7kqFWLlsZxrSoYEJvSuCF2YWA/exec'; 
 
-// SENHAS DE FÁBRICA COM OS 3 NOVOS SETORES ADICIONADOS
+// TODAS AS SENHAS DE FÁBRICA OFICIAIS ATUALIZADAS
 const SENHAS_PADRAO = {
     "Dised": "dised123",
     "Dioq": "dioq123",
@@ -59,7 +59,7 @@ function fazerLogout() {
     document.querySelector('.usuario-logado').classList.add('oculto');
 }
 // ==========================================================================
-// 2. ALTERAÇÃO DE SENHAS E CADASTRO DE DETENTOS COM REGISTRO DE SETOR AUTOR
+// 2. ALTERAÇÃO DE SENHAS E CADASTRO COM TRAVA DE SEGURANÇA DE PRONTUÁRIO
 // ==========================================================================
 
 function abrirPainelSenha() { document.getElementById('blocoAlterarSenha').classList.remove('oculto'); }
@@ -100,30 +100,81 @@ function configurarPermissoesDeTela(setor) {
     carregarDados();
 }
 
+// TRAVA AUTOMÁTICA NO FORMULÁRIO: Impede o preso de entrar se avaliado nos últimos 6 meses pelo prontuário
 document.getElementById('formPreso').addEventListener('submit', function(e) {
     e.preventDefault();
     const btnCadastro = e.target.querySelector('button[type="submit"]');
-    btnCadastro.disabled = true; btnCadastro.innerText = "Cadastrando...";
+    
+    // Normaliza o prontuário digitado para texto limpo e minúsculo
+    const prontuarioDigitado = String(document.getElementById('prontuario').value).trim().toLowerCase();
 
-    // AUDITORIA AUTOMÁTICA: Salva qual setor logado está incluindo o preso
-    const dados = {
-        acao: "incluirPreso", id: Date.now(),
-        memorando: document.getElementById('memo').value,
-        quemIncluiu: setorLogadoAtualmente, 
-        nome: document.getElementById('nomePreso').value,
-        prontuario: document.getElementById('prontuario').value,
-        canteiro: document.getElementById('canteiroTrabalho').value
-    };
+    btnCadastro.disabled = true; 
+    btnCadastro.innerText = "Verificando histórico por prontuário...";
 
-    fetch(SCRIPT_URL, { method: 'POST', body: JSON.stringify(dados) })
-    .then(() => { 
-        alert('Preso incluído com sucesso!'); 
-        document.getElementById('formPreso').reset(); 
-        carregarDados();
-        carregarHistoricoDeMemorandos();
+    // URL Direta: Varrre o banco bruto na nuvem sem travas ou paginações curtas
+    const urlVerificar = `${SCRIPT_URL}?setor=Direcao&pendentes=false&pagina=1&limite=100000`;
+
+    fetch(urlVerificar)
+    .then(res => res.json())
+    .then(resposta => {
+        const registros = resposta.dados || [];
+        
+        // Compara os prontuários de forma totalmente imune a erros de caixa alta/baixa
+        const historicoRecente = registros.find(preso => {
+            const prontuarioBanco = String(preso.prontuario || "").trim().toLowerCase();
+            
+            if (prontuarioBanco === prontuarioDigitado) {
+                const votoDirecao = preso.avaliacoes.find(a => a.setor === "Direção");
+                if (votoDirecao && votoDirecao.dataVoto) {
+                    const dataDoVoto = new Date(votoDirecao.dataVoto);
+                    const dataLimite = new Date(dataDoVoto);
+                    dataLimite.setMonth(dataLimite.getMonth() + 6); // Regra dos 180 dias
+                    return new Date() < dataLimite;
+                }
+            }
+            return false;
+        });
+
+        // Se encontrar comissão recente para esse prontuário, cancela o cadastro na hora
+        if (historicoRecente) {
+            const votoDirecao = historicoRecente.avaliacoes.find(a => a.setor === "Direção");
+            const dVoto = new Date(votoDirecao.dataVoto);
+            const dLib = new Date(dVoto); dLib.setMonth(dLib.getMonth() + 6);
+            
+            alert(`🛑 INCLUSÃO BLOQUEADA PELA REGRA DOS 6 MESES!\n\nO interno ${historicoRecente.nome} (Prontuário: ${document.getElementById('prontuario').value}) possui parecer final concluído em ${dVoto.toLocaleDateString('pt-BR')}.\n\nUma nova comissão para este prontuário só estará liberada em: ${dLib.toLocaleDateString('pt-BR')}.`);
+            
+            btnCadastro.disabled = false; 
+            btnCadastro.innerText = "Cadastrar Preso";
+            return; 
+        }
+
+        // Sem ocorrências recentes: prossegue com a gravação inserindo auditoria do autor
+        btnCadastro.innerText = "Cadastrando...";
+        const dados = {
+            acao: "incluirPreso", id: Date.now(),
+            memorando: document.getElementById('memo').value,
+            quemIncluiu: setorLogadoAtualmente, 
+            nome: document.getElementById('nomePreso').value,
+            prontuario: document.getElementById('prontuario').value,
+            canteiro: document.getElementById('canteiroTrabalho').value
+        };
+
+        return fetch(SCRIPT_URL, { method: 'POST', body: JSON.stringify(dados) })
+        .then(() => { 
+            alert('Preso incluído com sucesso!'); 
+            document.getElementById('formPreso').reset(); 
+            carregarDados();
+            carregarHistoricoDeMemorandos();
+        });
     })
-    .catch(() => { alert('Preso processado! Atualizando.'); carregarDados(); })
-    .finally(() => { btnCadastro.disabled = false; btnCadastro.innerText = "Cadastrar Preso"; });
+    .catch((err) => { 
+        console.error(err);
+        alert('Erro ao validar histórico na nuvem. Atualize a página e tente de novo.'); 
+    })
+    .finally(() => { 
+        btnCadastro.disabled = false; 
+        btnCadastro.innerText = "Cadastrar Preso"; 
+    });
 });
 // ==========================================================================
 // 3. ENVIO DE PARECERES INTEGRADO E NAVEGAÇÃO DE PÁGINAS
@@ -170,7 +221,7 @@ function atualizarControlesPagina(totalRegistros) {
     btnProximo.disabled = (paginaAtual === totalPaginas);
 }
 // ==========================================================================
-// 4. TABELA MASTER EXPANDIDA - AUDITORIA, 8 SETORES E TRAVA DE 6 MESES
+// 4. TABELA MASTER EXPANDIDA - AUDITORIA, 8 SETORES E EXIBIÇÃO DE MARCADORES
 // ==========================================================================
 
 function carregarDados() {
@@ -178,7 +229,6 @@ function carregarDados() {
     const cabecalho = document.getElementById('cabecalhoTabela');
     corpo.innerHTML = '<tr><td colspan="5">Carregando dados confidenciais...</td></tr>';
 
-    // Monta o cabeçalho dinâmico baseado no nível de acesso
     if (setorLogadoAtualmente === "Direção") {
         cabecalho.innerHTML = `<th>Memorando</th><th>Quem Incluiu</th><th>Nome</th><th>Prontuário</th><th>Canteiro</th><th>DISED</th><th>DIOQ</th><th>JURÍDICO</th><th>SOCIAL</th><th>PEDAGOGIA</th><th>ENFERMARIA</th><th>PSICOLOGIA</th><th>Sua Avaliação (Direção)</th>`;
     } else {
@@ -192,20 +242,38 @@ function carregarDados() {
 
     fetch(urlConsultar).then(res => res.json()).then(respostaServidor => {
         const presos = respostaServidor.dados || []; 
-        const totalRegistros = respostaServidor.totalRegistros || 0;
+        let totalRegistros = respostaServidor.totalRegistros || 0;
         corpo.innerHTML = '';
         
-        if (presos.length === 0) {
+        // FILTRAGEM DE PENDENTES: Se não for Direção e "Apenas Pendentes" estiver marcado,
+        // remove da lista de exibição os presos cujo diretor já encerrou o processo.
+        let presosFiltrados = presos;
+        if (setorLogadoAtualmente !== "Direção" && filtrarApenasPendentes) {
+            presosFiltrados = presos.filter(preso => {
+                const votoDirecao = preso.avaliacoes.find(a => a.setor === "Direção");
+                if (votoDirecao && votoDirecao.dataVoto) {
+                    const dataDoVoto = new Date(votoDirecao.dataVoto);
+                    const dataLimite = new Date(dataDoVoto);
+                    dataLimite.setMonth(dataLimite.getMonth() + 6);
+                    if (new Date() < dataLimite) {
+                        return false; 
+                    }
+                }
+                return true;
+            });
+            totalRegistros = totalRegistros - (presos.length - presosFiltrados.length);
+        }
+
+        if (presosFiltrados.length === 0) {
             corpo.innerHTML = `<tr><td colspan="${setorLogadoAtualmente === 'Direção' ? 13 : 6}">Nenhum preso aguardando avaliação.</td></tr>`;
             atualizarControlesPagina(0); return;
         }
 
-        presos.forEach(preso => {
+        presosFiltrados.forEach(preso => {
             const tr = document.createElement('tr');
             const canteiroTexto = preso.canteiro || "Não Informado";
             const autorCadastro = preso.quemIncluiu || "Não Informado";
             
-            // INTELIGÊNCIA DE TRAVA AUTOMÁTICA DOS 6 MESES
             const votoDirecaoAnterior = preso.avaliacoes.find(a => a.setor === "Direção");
             let estaBloqueadoPorTempo = false;
             let mensagemBloqueioHtml = "";
@@ -213,7 +281,7 @@ function carregarDados() {
             if (votoDirecaoAnterior && votoDirecaoAnterior.dataVoto) {
                 const dataDoVoto = new Date(votoDirecaoAnterior.dataVoto);
                 const dataLimiteLiberacao = new Date(dataDoVoto);
-                dataLimiteLiberacao.setMonth(dataLimiteLiberacao.getMonth() + 6); // Soma os 6 meses regulamentares
+                dataLimiteLiberacao.setMonth(dataLimiteLiberacao.getMonth() + 6);
                 const dataHoje = new Date();
 
                 if (dataHoje < dataLimiteLiberacao) {
@@ -233,11 +301,18 @@ function carregarDados() {
                 };
 
                 let celulaVotoDirecao = '';
-                if (estaBloqueadoPorTempo) {
-                    celulaVotoDirecao = mensagemBloqueioHtml;
-                } else if (votoDirecaoAnterior) {
+                
+                if (votoDirecaoAnterior) {
                     const classeVoto = votoDirecaoAnterior.decisao === "SIM" ? "voto-sim" : "voto-nao";
-                    celulaVotoDirecao = `<span class="voto-status ${classeVoto}">${votoDirecaoAnterior.decisao}</span><div class="comentario-container">${votoDirecaoAnterior.observacao}</div>`;
+                    let htmlVoto = `<span class="voto-status ${classeVoto}">${votoDirecaoAnterior.decisao}</span><div class="comentario-container">${votoDirecaoAnterior.observacao}</div>`;
+                    
+                    if (estaBloqueadoPorTempo) {
+                        celulaVotoDirecao = htmlVoto + "<div style='margin-top:5px;'></div>" + mensagemBloqueioHtml;
+                    } else {
+                        celulaVotoDirecao = htmlVoto;
+                    }
+                } else if (estaBloqueadoPorTempo) {
+                    celulaVotoDirecao = mensagemBloqueioHtml;
                 } else {
                     celulaVotoDirecao = `<select style="width:100%; margin-bottom:5px;"><option value="" selected disabled>-- Selecione --</option><option value="SIM">SIM</option><option value="NÃO">NÃO</option></select><textarea placeholder="Decisão final..." style="min-height:50px; font-size:0.8rem;"></textarea><button onclick="salvarVoto(${preso.id}, this)" style="padding:4px 8px; font-size:0.8rem; margin-top:2px; width:100%;">Votar</button>`;
                 }
@@ -248,7 +323,7 @@ function carregarDados() {
                 const jaAvaliou = preso.avaliacoes.find(a => String(a.setor).toLowerCase().normalize("NFD").replace(/[\u0300-\u036f]/g, "") === String(setorLogadoAtualmente).toLowerCase().normalize("NFD").replace(/[\u0300-\u036f]/g, ""));
 
                 if (estaBloqueadoPorTempo) {
-                    celulaAcao = mensagemBloqueioHtml; // Bloqueia também a comissão comum se a Direção já encerrou o ciclo há menos de 6 meses
+                    celulaAcao = mensagemBloqueioHtml;
                 } else if(jaAvaliou) {
                     const classeVoto = jaAvaliou.decisao === "SIM" ? "voto-sim" : "voto-nao";
                     celulaAcao = `<span class="voto-status ${classeVoto}">Realizada: ${jaAvaliou.decisao}</span><div class="comentario-container" style="max-width: 100%;" title="${jaAvaliou.observacao}">${jaAvaliou.observacao}</div>`;
@@ -279,9 +354,7 @@ function carregarHistoricoDeMemorandos() {
         if (selectFiltro) {
             selectFiltro.innerHTML = '<option value="">🔍 Filtrar por número de memorando... (Exibir Todos)</option>'; 
         }
-        if (datalistCadastro) {
-            datalistCadastro.innerHTML = ''; 
-        }
+        if (datalistCadastro) { datalistCadastro.innerHTML = ''; }
 
         if (!memorandos || memorandos.length === 0) return;
 
