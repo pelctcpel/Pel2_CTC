@@ -1,0 +1,169 @@
+/* ==========================================================================
+   1. CONFIGURAÇÕES GERAIS E RESETS
+   ========================================================================== */
+* { 
+    box-sizing: border-box; 
+    font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; 
+    margin: 0; 
+    padding: 0; 
+}
+
+body { 
+    background: #f5f7fb; 
+    padding: 20px; 
+}
+
+.container { 
+    max-width: 1200px; 
+    width: 100%;
+    margin: 0 auto; 
+    background: white; 
+    padding: 25px; 
+    border-radius: 8px; 
+    box-shadow: 0 4px 10px rgba(0,0,0,0.08); 
+}
+
+h1, h2 { 
+    color: #1e293b; 
+    margin-bottom: 20px; 
+}
+
+.bloco { 
+    background: #f8fafc; 
+    padding: 15px; 
+    border-radius: 6px; 
+    margin-bottom: 20px; 
+    border: 1px solid #e2e8f0; 
+}
+
+label { 
+    display: block; 
+    font-weight: bold; 
+    margin: 10px 0 5px; 
+    color: #334155;
+}
+/* ==========================================================================
+   2. INPUTS, FORMULÁRIOS E ELEMENTOS DE BOTÕES
+   ========================================================================== */
+input, select, textarea { 
+    width: 100%; 
+    padding: 8px; 
+    border: 1px solid #cbd5e1; 
+    border-radius: 4px; 
+    margin-bottom: 10px; 
+    font-size: 0.95rem;
+}
+
+#formPreso div {
+    display: flex;
+    gap: 15px;
+    flex-wrap: wrap;
+    align-items: flex-end;
+}
+
+#formPreso div > div {
+    flex: 1;
+    min-width: 180px;
+}
+
+#memo, #prontuario, #canteiroTrabalho {
+    max-width: 100% !important;
+}
+
+.oculto { 
+    display: none !important; 
+}
+
+button { 
+    background: #1e3a8a; 
+    color: white; 
+    border: none; 
+    padding: 10px 15px; 
+    border-radius: 4px; 
+    cursor: pointer; 
+    font-weight: bold; 
+    margin-top: 10px; 
+    transition: background 0.2s ease;
+}
+
+button:hover { background: #172554; }
+.btn-print { background: #059669; }
+.btn-print:hover { background: #047857; }
+.btn-sair { background: #dc2626; margin-top: 0; padding: 6px 12px; font-size: 0.9rem; }
+.btn-sair:hover { background: #b91c1c; }
+/* ==========================================================================
+   3. ESTILIZAÇÃO DE LOGIN, TABELA MASTER E EXIBIÇÃO DE MODAL POPUP
+   ========================================================================== */
+.container-login { display: flex; justify-content: center; align-items: center; min-height: 80vh; }
+.login-box { background: white; padding: 35px; border-radius: 8px; box-shadow: 0 10px 25px rgba(0,0,0,0.1); max-width: 400px; width: 100%; text-align: left; border-top: 5px solid #1e3a8a; }
+.login-box p { font-size: 0.9rem; color: #64748b; margin-bottom: 20px; line-height: 1.4; }
+.erro-mensagem { background: #fee2e2; color: #991b1b; padding: 10px; border-radius: 4px; font-size: 0.85rem; font-weight: bold; margin-top: 15px; text-align: center; }
+
+.header-sistema { display: flex; justify-content: space-between; align-items: center; border-bottom: 2px solid #f1f5f9; padding-bottom: 15px; margin-bottom: 25px; }
+.logo-titulo-container { display: flex; align-items: center; gap: 15px; }
+.emblema-topo { height: 65px; width: auto; object-fit: contain; }
+.logo-titulo-container h1 { margin-bottom: 0; font-size: 1.7rem; color: #0f172a; }
+.usuario-logado { display: flex; align-items: center; gap: 15px; }
+.usuario-logado span { font-size: 0.95rem; background: #e2e8f0; padding: 6px 12px; border-radius: 4px; color: #334155; }
+
+table { width: 100%; border-collapse: collapse; margin-top: 15px; }
+th, td { border: 1px solid #e2e8f0; padding: 10px; text-align: left; }
+th { background: #cbd5e1; color: #1e293b; font-weight: bold; }
+#tabelaMaster td { white-space: normal; word-break: keep-all; word-wrap: break-word; vertical-align: top; }
+
+.voto-status { display: inline-block; padding: 2px 6px; border-radius: 4px; font-weight: bold; margin-bottom: 4px; white-space: nowrap; }
+.voto-sim { background: #d1fae5; color: #065f46; }
+.voto-nao { background: #fee2e2; color: #991b1b; }
+.voto-pendente { background: #f1f5f9; color: #475569; }
+.comentario-container { width: 100% !important; max-width: 180px !important; max-height: 100px; overflow-y: auto; font-size: 0.85rem; line-height: 1.3; word-wrap: break-word; padding: 4px; background: #f8fafc; border-radius: 4px; display: block; }
+#tabelaMaster .comentario-container { max-width: 100% !important; }
+
+.modal-overlay { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(15, 23, 42, 0.6); backdrop-filter: blur(4px); display: flex; justify-content: center; align-items: center; z-index: 9999; }
+.modal-box { background: white; width: 100%; max-width: 600px; border-radius: 8px; padding: 25px; box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.15), 0 10px 10px -5px rgba(0, 0, 0, 0.04); animation: modalEntrada 0.2s ease-out; }
+.modal-header { display: flex; justify-content: space-between; align-items: center; border-bottom: 2px solid #f1f5f9; padding-bottom: 12px; margin-bottom: 15px; }
+.modal-header h2 { margin-bottom: 0; font-size: 1.4rem; }
+.modal-close-btn { background: transparent !important; color: #94a3b8 !important; font-size: 1.8rem; padding: 0 !important; margin-top: 0 !important; line-height: 1; }
+.modal-close-btn:hover { color: #475569 !important; }
+.modal-table-container { max-height: 350px; overflow-y: auto; border: 1px solid #e2e8f0; border-radius: 4px; margin-top: 15px; }
+.modal-table-container table { margin-top: 0; }
+@keyframes modalEntrada { from { transform: scale(0.95); opacity: 0; } to { transform: scale(1); opacity: 1; } }
+/* ==========================================================================
+   4. INTERATIVIDADE, SUPORTE A IMPRESSÃO E AJUSTE DO CHECKBOX VISUAL
+   ========================================================================== */
+#tabelaMaster th, #tabelaMaster td { padding: 14px 12px; }
+#tabelaMaster select, #tabelaMaster textarea { border: 1px solid #cbd5e1; border-radius: 6px; padding: 8px 10px; font-size: 0.85rem; transition: all 0.2s ease; }
+#tabelaMaster select:focus, #tabelaMaster textarea:focus { outline: none; border-color: #3b82f6; box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.15); }
+#tabelaMaster textarea { min-height: 65px; resize: vertical; overflow-y: hidden; }
+#tabelaMaster button { background: #2563eb; color: white; font-size: 0.85rem; font-weight: 600; padding: 8px 12px; border-radius: 6px; width: 100%; margin-top: 6px; box-shadow: 0 1px 2px rgba(0, 0, 0, 0.05); transition: all 0.2s ease; }
+#tabelaMaster button:hover { background: #1d4ed8; transform: translateY(-1px); box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1); }
+#tabelaMaster button:active { transform: translateY(0); }
+
+@media print {
+    #telaLogin, #blocoAlterarSenha, #blocoInclusao, .no-print, .usuario-logado, #tabelaMaster select, #tabelaMaster textarea, #tabelaMaster button { display: none !important; }
+    body { background: white !important; padding: 0 !important; margin: 0 !important; }
+    .container { box-shadow: none !important; border: none !important; max-width: 100% !important; padding: 0 !important; background: transparent !important; }
+    .bloco { background: transparent !important; border: none !important; padding: 0 !important; margin-bottom: 10px !important; }
+    #tabelaMaster { width: 100% !important; border-collapse: collapse !important; font-size: 0.8rem !important; }
+    #tabelaMaster th, #tabelaMaster td { padding: 6px 8px !important; border: 1px solid #000 !important; color: #000 !important; white-space: normal !important; word-break: keep-all !important; }
+    .voto-status { background: transparent !important; color: #000 !important; padding: 0 !important; font-weight: bold !important; }
+}
+
+/* ESTILOS DA NOVA BARRA DE FLUXO COM ALINHAMENTO FIXADO */
+.barra-paginacao { display: flex; justify-content: space-between; align-items: center; background: #f8fafc; padding: 12px 20px; border-radius: 6px; margin: 15px 0; border: 1px solid #e2e8f0; }
+.switch-label { display: flex !important; align-items: center !important; gap: 10px !important; cursor: pointer; font-weight: 600; color: #334155; margin: 0 !important; }
+
+/* Correção estrutural da caixinha azul que estava quebrando */
+.switch-label input[type="checkbox"] {
+    width: 18px !important;
+    height: 18px !important;
+    margin: 0 !important;
+    padding: 0 !important;
+    cursor: pointer;
+    display: inline-block !important;
+}
+
+.botoes-navegacao { display: flex; align-items: center; gap: 15px; }
+.botoes-navegacao button { margin-top: 0; padding: 8px 14px; background: #475569; }
+.botoes-navegacao button:hover:not(:disabled) { background: #334155; }
+.botoes-navegacao button:disabled { background: #cbd5e1; color: #94a3b8; cursor: not-allowed; transform: none !important; box-shadow: none !important; }
+#indicadorPagina { font-weight: bold; color: #1e293b; font-size: 0.95rem; }
