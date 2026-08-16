@@ -4,189 +4,178 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Penitenciária PEL2 - Avaliação CTC</title>
-    <!-- Vincula o seu arquivo de estilos (source 2) -->
     <link rel="stylesheet" href="style.css">
 </head>
 <body>
 
-    <!-- 1. TELA DE LOGIN (ESTRUTURA DE ACESSO INICIAL) -->
-    <div id="telaLogin" class="container-login">
-        <div class="login-box">
-            <h2>Acesso ao Sistema CTC</h2>
-            <p>Selecione seu departamento e digite a senha autorizada para prosseguir.</p>
-            
-            <label for="setorLogin">Setor / Departamento:</label>
-            <select id="setorLogin">
-                <option value="" selected disabled>-- Escolha o Setor --</option>
-                <option value="Dised">Dised (Segurança)</option>
-                <option value="Dioq">Dioq (Implantes/Trabalho)</option>
-                <option value="Jurídico">Jurídico</option>
-                <option value="Social">Social</option>
-                <option value="Pedagogia">Pedagogia</option>
-                <option value="Enfermaria">Enfermaria</option>
-                <option value="Psicologia">Psicologia</option>
-                <option value="Direção">Direção</option>
-            </select>
-
-            <label for="senhaLogin">Senha de Acesso:</label>
-            <input type="password" id="senhaLogin" placeholder="Digite a senha...">
-
-            <button type="button" onclick="efetuarLogin()" style="width: 100%;">Entrar no Sistema</button>
-
-            <!-- Painel de Erro ocultado por padrão -->
-            <div id="erroLogin" class="erro-mensagem oculto">
-                Senha incorreta para o setor selecionado!
-            </div>
-        </div>
-    </div>
-    <!-- 2. SISTEMA PRINCIPAL (SÓ APARECE APÓS LOGIN BEM-SUCEDIDO) -->
-    <div id="sistemaPrincipal" class="container oculto">
-        
-        <!-- Cabeçalho de Identificação do Usuário Logado -->
+    <div class="container">
+        <!-- CABEÇALHO DO SISTEMA PRINCIPAL (Sempre visível desde o início) -->
         <header class="header-sistema">
             <div class="logo-titulo-container">
-                <img src="emblema.png" alt="Polícia Penal PR" class="emblema-topo" onerror="this.style.display='none'">
-                <div>
-                    <h1>Penitenciária PEL2 - Avaliação CTC</h1>
-                    <small style="color: #64748b; font-weight: 600;">Polícia Penal PR</small>
-                </div>
+                <img src="emblema.png" alt="Polícia Penal PR" class="emblema-topo">
+                <h1>Penitenciária PEL2 - Avaliação CTC</h1>
             </div>
+            
+            <!-- APENAS ESTA DIV DOS BOTÕES ADMIN COMEÇA OCULTA -->
             <div class="usuario-logado oculto">
                 <span>Setor Ativo: <strong id="nomeSetorAtivo">Nenhum</strong></span>
-                <button type="button" onclick="abrirPainelSenha()" style="background: #475569; margin-top: 0; padding: 6px 12px; font-size: 0.9rem;">⚙ Mudar Senha</button>
-                <button type="button" onclick="fazerLogout()" class="btn-sair">Sair</button>
+                <button onclick="abrirPainelSenha()" style="background: #475569;">⚙ Mudar Senha</button>
+                <button onclick="fazerLogout()" class="btn-sair">Sair</button>
             </div>
         </header>
 
-        <!-- Bloco Oculto de Alteração de Senhas -->
+        <!-- BLOCO OCULTO: ALTERAR SENHA DO SETOR -->
         <div id="blocoAlterarSenha" class="bloco oculto">
             <h2>Alterar Senha do Setor</h2>
-            <div style="display: flex; gap: 15px; flex-wrap: wrap;">
-                <div style="flex: 1; min-width: 200px;">
-                    <label for="novaSenhaInput">Nova Senha:</label>
-                    <input type="password" id="novaSenhaInput" placeholder="Nova senha">
-                </div>
-                <div style="flex: 1; min-width: 200px;">
-                    <label for="confirmarNovaSenhaInput">Confirme a Nova Senha:</label>
-                    <input type="password" id="confirmarNovaSenhaInput" placeholder="Repita a nova senha">
+            <label for="novaSenhaInput">Nova Senha:</label>
+            <input type="password" id="novaSenhaInput" placeholder="Digite a nova senha">
+            
+            <label for="confirmarNovaSenhaInput">Confirme a Nova Senha:</label>
+            <input type="password" id="confirmarNovaSenhaInput" placeholder="Repita a nova senha">
+            
+            <button onclick="salvarNovaSenha()">Salvar Senha</button>
+            <button onclick="fecharPainelSenha()" style="background: #64748b;">Cancelar</button>
+        </div>
+        <!-- TELA DE LOGIN (Aparece primeiro) -->
+        <div id="telaLogin" class="container-login">
+            <div class="login-box">
+                <h2>Acesso ao Sistema CTC</h2>
+                <p>Selecione seu departamento e digite a senha autorizada para prosseguir.</p>
+                
+                <label for="setorLogin">Setor / Departamento:</label>
+                <select id="setorLogin">
+                    <option value="" selected disabled>-- Escolha o Setor --</option>
+                    <option value="Dised">Dised (Segurança)</option>
+                    <option value="Dioq">Dioq (Implantes/Trabalho)</option>
+                    <option value="Jurídico">Jurídico</option>
+                    <option value="Social">Social</option>
+                    <option value="Pedagogia">Pedagogia</option>
+                    <option value="Enfermaria">Enfermaria</option>
+                    <option value="Psicologia">Psicologia</option>
+                    <option value="Direção">Direção</option>
+                </select>
+                
+                <label for="senhaLogin">Senha de Acesso:</label>
+                <input type="password" id="senhaLogin" placeholder="••••••••">
+                
+                <button onclick="efetuarLogin()" style="width: 100%;">Entrar no Sistema</button>
+                
+                <div id="erroLogin" class="erro-mensagem oculto">
+                    Senha incorreta para o setor selecionado!
                 </div>
             </div>
-            <button type="button" onclick="salvarNovaSenha()">Salvar Senha</button>
-            <button type="button" onclick="fecharPainelSenha()" style="background: #64748b;">Cancelar</button>
         </div>
 
-        <!-- Form de Inclusão de Novos Presos com Datalist Inteligente -->
-        <div id="blocoInclusao" class="bloco oculto">
-            <h2>Incluir Novo Preso para Avaliação</h2>
-            <form id="formPreso">
-                <div>
-                    <div>
-                        <label for="memo">Nº do Memorando:</label>
-                        <input type="text" id="memo" list="historicoMemorandos" required placeholder="Ex: 123/2026">
-                        <datalist id="historicoMemorandos"></datalist>
-                    </div>
-                    <div>
-                        <label for="nomePreso">Nome Completo do Preso:</label>
-                        <input type="text" id="nomePreso" required placeholder="Nome do interno">
-                    </div>
-                    <div>
-                        <label for="prontuario">Nº Prontuário:</label>
-                        <input type="text" id="prontuario" required placeholder="Apenas números">
-                    </div>
-                    <div>
-                        <label for="canteiroTrabalho">Canteiro de Trabalho Proposto:</label>
-                        <select id="canteiroTrabalho" required>
-                            <option value="">-- Selecione o Canteiro --</option>
-                        </select>
-                    </div>
-                </div>
-                <button type="submit">Cadastrar Preso</button>
-                <button type="button" id="btnGerenciarPopup" onclick="abrirModalCanteiros()" style="background: #475569;">⚙ Gerenciar Canteiros</button>
-            </form>
-        </div>
-        <!-- 3. LISTAGEM DE INMATES E FILTROS DE PESQUISA -->
-        <div class="bloco">
-            <h2>Presos Cadastrados / Status das Avaliações</h2>
+        <!-- SISTEMA PRINCIPAL (Libera após o login com validação) -->
+        <div id="sistemaPrincipal" class="oculto">
             
-            <!-- Barra de Ações Rápidas (Filtro por Memorando e Relatórios) -->
-            <div style="display: flex; gap: 10px; flex-wrap: wrap; margin-bottom: 15px;">
-                <div style="flex: 1; min-width: 250px;">
-                    <select id="filtroMemorando" onchange="filtrarPorMemorando()">
+            <!-- BLOCO DE INCLUSÃO (Liberado para todos os setores) -->
+            <div id="blocoInclusao" class="bloco">
+                <h2>Incluir Novo Preso para Avaliação</h2>
+                <form id="formPreso">
+                    <div>
+                        <div>
+                            <label for="memo">Nº do Memorando:</label>
+                            <input type="text" id="memo" required placeholder="Ex: 123/2026" list="historicoMemorandos">
+                            <datalist id="historicoMemorandos"></datalist>
+                        </div>
+                        <div>
+                            <label for="nomePreso">Nome Completo do Preso:</label>
+                            <input type="text" id="nomePreso" required placeholder="Nome completo do interno">
+                        </div>
+                        <div>
+                            <label for="prontuario">Nº Prontuário:</label>
+                            <input type="text" id="prontuario" required placeholder="Ex: 12.345.678-9">
+                        </div>
+                        <div>
+                            <label for="canteiroTrabalho">Canteiro de Trabalho Proposto:</label>
+                            <select id="canteiroTrabalho" required>
+                                <option value="">-- Selecione o Canteiro --</option>
+                            </select>
+                        </div>
+                    </div>
+                    <button type="submit">Cadastrar Preso</button>
+                    <button type="button" id="btnGerenciarPopup" onclick="abrirModalCanteiros()" style="background: #475569;">⚙ Gerenciar Canteiros</button>
+                </form>
+            </div>
+            <!-- SEÇÃO DE DADOS E RELATÓRIOS -->
+            <div class="bloco">
+                <h2>Presos Cadastrados / Status das Avaliações</h2>
+                
+                <!-- Barra de Ações Rápidas com Filtro Seguro por Select -->
+                <div style="display: flex; gap: 10px; margin-bottom: 15px; flex-wrap: wrap;" class="no-print">
+                    <select id="filtroMemorando" onchange="filtrarPorMemorando()" style="flex: 1; margin-bottom: 0; min-width: 250px;">
                         <option value="">🔍 Filtrar por número de memorando... (Exibir Todos)</option>
                     </select>
+                    <button onclick="carregarDados()" style="background: #475569; margin-top:0;">Atualizar Lista</button>
+                    <button id="btnExportar" onclick="exportarExcel()" style="background: #0284c7; margin-top:0;" class="oculto">Exportar para Excel</button>
+                    <button id="btnImprimir" onclick="window.print()" class="btn-print oculto" style="margin-top:0;">Imprimir Relatório</button>
                 </div>
-                <button type="button" onclick="carregarDados()" style="background: #475569; margin-top:0;">Atualizar Lista</button>
-                <button type="button" id="btnExportar" onclick="exportarExcel()" class="oculto" style="background: #0284c7; margin-top:0;">Exportar para Excel</button>
-                <button type="button" id="btnImprimir" onclick="window.print()" class="btn-print no-print oculto" style="margin-top:0;">Imprimir Relatório</button>
-            </div>
 
-            <!-- Filtro Checkbox de Processos Pendentes -->
-            <div class="barra-paginacao">
-                <label class="switch-label">
-                    <input type="checkbox" id="chkPendentes" onchange="alternarFiltroPendentes(this)">
-                    <span>Exibir apenas processos Pendentes da minha avaliação</span>
-                </label>
-                
-                <!-- Paginação -->
-                <div class="botoes-navegacao">
-                    <button type="button" id="btnPagAnterior" onclick="mudarPagina(-1)">◀ Anterior</button>
-                    <span id="indicadorPagina">Página 1</span>
-                    <button type="button" id="btnPagProxima" onclick="mudarPagina(1)">Próxima ▶</button>
+                <!-- BARRA DE CONTROLE DE FLUXO E PAGINAÇÃO -->
+                <div class="barra-paginacao no-print">
+                    <div class="grupo-filtro-status">
+                        <label for="chkPendentes" class="switch-label">
+                            <input type="checkbox" id="chkPendentes" checked onchange="alternarFiltroPendentes(this)">
+                            Exibir apenas processos Pendentes da minha avaliação
+                        </label>
+                    </div>
+                    <div class="botoes-navegacao">
+                        <button id="btnPagAnterior" onclick="mudarPagina(-1)" disabled>◀ Anterior</button>
+                        <span id="indicadorPagina">Página 1</span>
+                        <button id="btnPagProxima" onclick="mudarPagina(1)" disabled>Próxima ▶</button>
+                    </div>
+                </div>
+
+                <!-- TABELA MASTER DE EXIBIÇÃO -->
+                <div style="overflow-x: auto;">
+                    <table id="tabelaMaster">
+                        <thead id="cabecalhoTabela">
+                            <!-- Inserido dinamicamente via JavaScript -->
+                        </thead>
+                        <tbody id="corpoTabela">
+                            <tr>
+                                <td colspan="5">Aguardando login para carregar os dados confidenciais...</td>
+                            </tr>
+                        </tbody>
+                    </table>
                 </div>
             </div>
 
-            <!-- CONTAINER ADICIONADO PARA EVITAR QUEBRA NO CELULAR -->
-            <div class="tabela-responsiva-container">
-                <table id="tabelaMaster">
-                    <thead>
-                        <tr id="cabecalhoTabela">
-                            <!-- Inserido dinamicamente via JS de acordo com as permissões -->
-                        </tr>
-                    </thead>
-                    <tbody id="corpoTabela">
-                        <tr>
-                            <td colspan="6">Aguardando login para carregar os dados confidenciais...</td>
-                        </tr>
-                    </tbody>
-                </table>
-            </div>
+        </div> <!-- Fim do sistemaPrincipal -->
+    </div> <!-- Fim do container -->
 
-        </div>
-    </div>
-    <!-- 4. MODAL FLUTUANTE (POPUP) PARA GERENCIAR CANTEIROS -->
+    <!-- JANELA FLUTUANTE (MODAL POPUP) DE CANTEIROS -->
     <div id="modalCanteiros" class="modal-overlay oculto">
         <div class="modal-box">
             <div class="modal-header">
                 <h2>Gerenciar Canteiros de Trabalho</h2>
-                <button type="button" class="modal-close-btn" onclick="fecharModalCanteiros()">&times;</button>
+                <button onclick="fecharModalCanteiros()" class="modal-close-btn">×</button>
             </div>
             
-            <div class="bloco" style="margin-bottom: 0;">
-                <label for="novoCanteiroNome">Nome do Novo Canteiro:</label>
-                <div style="display: flex; gap: 10px;">
-                    <input type="text" id="novoCanteiroNome" placeholder="Ex: Cozinha Industrial, Horta...">
-                    <button type="button" onclick="adicionarNovoCanteiroServidor()" style="margin-top: 0; padding: 0 20px;">+ Adicionar</button>
-                </div>
+            <label for="novoCanteiroNome">Nome do Novo Canteiro:</label>
+            <div style="display: flex; gap: 10px;">
+                <input type="text" id="novoCanteiroNome" placeholder="Ex: Cozinha Industrial" style="margin-bottom: 0;">
+                <button onclick="adicionarNovoCanteiroServidor()" style="margin-top: 0; background: #059669;">+ Adicionar</button>
             </div>
 
-            <h3 style="margin-top: 20px; font-size: 1.1rem; color: #1e293b;">Canteiros Cadastrados</h3>
             <div class="modal-table-container">
                 <table>
                     <thead>
                         <tr>
-                            <th>Canteiro</th>
+                            <th>Canteiros Cadastrados</th>
                             <th style="width: 100px; text-align: center;">Ações</th>
                         </tr>
                     </thead>
                     <tbody id="corpoTabelaCanteiros">
-                        <!-- Alimentado de forma dinâmica via JavaScript -->
+                        <!-- Carregado via JS -->
                     </tbody>
                 </table>
             </div>
         </div>
     </div>
 
-    <!-- Vincula o seu arquivo de lógica JavaScript (source 1) -->
+    <!-- Sincroniza o arquivo de controle inteligente de rotas -->
     <script src="script.js"></script>
 </body>
 </html>

@@ -1,5 +1,5 @@
 /* ==========================================================================
-   1. CONFIGURAÇÕES GERAIS, RESETS E INPUTS (PC PADRÃO)
+   1. CONFIGURAÇÕES GERAIS E RESETS
    ========================================================================== */
 * { 
     box-sizing: border-box; 
@@ -42,7 +42,9 @@ label {
     margin: 10px 0 5px; 
     color: #334155;
 }
-
+/* ==========================================================================
+   2. INPUTS, FORMULÁRIOS E ELEMENTOS DE BOTÕES
+   ========================================================================== */
 input, select, textarea { 
     width: 100%; 
     padding: 8px; 
@@ -51,9 +53,7 @@ input, select, textarea {
     margin-bottom: 10px; 
     font-size: 0.95rem;
 }
-/* ==========================================================================
-   2. ESTRUTURA DO FORMULÁRIO DE CADASTRO E BOTÕES (PC PADRÃO)
-   ========================================================================== */
+
 #formPreso div {
     display: flex;
     gap: 15px;
@@ -92,7 +92,7 @@ button:hover { background: #172554; }
 .btn-sair { background: #dc2626; margin-top: 0; padding: 6px 12px; font-size: 0.9rem; }
 .btn-sair:hover { background: #b91c1c; }
 /* ==========================================================================
-   3. ESTILIZAÇÃO DE LOGIN, TABELA MASTER, PAGINAÇÃO E MODAIS (PC PADRÃO)
+   3. ESTILIZAÇÃO DE LOGIN, TABELA MASTER E EXIBIÇÃO DE MODAL POPUP
    ========================================================================== */
 .container-login { display: flex; justify-content: center; align-items: center; min-height: 80vh; }
 .login-box { background: white; padding: 35px; border-radius: 8px; box-shadow: 0 10px 25px rgba(0,0,0,0.1); max-width: 400px; width: 100%; text-align: left; border-top: 5px solid #1e3a8a; }
@@ -127,7 +127,9 @@ th { background: #cbd5e1; color: #1e293b; font-weight: bold; }
 .modal-table-container { max-height: 350px; overflow-y: auto; border: 1px solid #e2e8f0; border-radius: 4px; margin-top: 15px; }
 .modal-table-container table { margin-top: 0; }
 @keyframes modalEntrada { from { transform: scale(0.95); opacity: 0; } to { transform: scale(1); opacity: 1; } }
-
+/* ==========================================================================
+   4. INTERATIVIDADE, SUPORTE A IMPRESSÃO E AJUSTE DO CHECKBOX VISUAL
+   ========================================================================== */
 #tabelaMaster th, #tabelaMaster td { padding: 14px 12px; }
 #tabelaMaster select, #tabelaMaster textarea { border: 1px solid #cbd5e1; border-radius: 6px; padding: 8px 10px; font-size: 0.85rem; transition: all 0.2s ease; }
 #tabelaMaster select:focus, #tabelaMaster textarea:focus { outline: none; border-color: #3b82f6; box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.15); }
@@ -136,26 +138,6 @@ th { background: #cbd5e1; color: #1e293b; font-weight: bold; }
 #tabelaMaster button:hover { background: #1d4ed8; transform: translateY(-1px); box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1); }
 #tabelaMaster button:active { transform: translateY(0); }
 
-.barra-paginacao { display: flex; justify-content: space-between; align-items: center; background: #f8fafc; padding: 12px 20px; border-radius: 6px; margin: 15px 0; border: 1px solid #e2e8f0; }
-.switch-label { display: flex !important; align-items: center !important; gap: 10px !important; cursor: pointer; font-weight: 600; color: #334155; margin: 0 !important; }
-.switch-label input[type="checkbox"] { width: 18px !important; height: 18px !important; margin: 0 !important; padding: 0 !important; cursor: pointer; display: inline-block !important; }
-
-.botoes-navegacao { display: flex; align-items: center; gap: 15px; }
-.botoes-navegacao button { margin-top: 0; padding: 8px 14px; background: #475569; }
-.botoes-navegacao button:hover:not(:disabled) { background: #334155; }
-.botoes-navegacao button:disabled { background: #cbd5e1; color: #94a3b8; cursor: not-allowed; transform: none !important; box-shadow: none !important; }
-#indicadorPagina { font-weight: bold; color: #1e293b; font-size: 0.95rem; }
-
-.alerta-trava-tempo { background: #fef2f2 !important; border: 1px solid #fee2e2 !important; color: #991b1b !important; padding: 6px 10px; border-radius: 6px; font-size: 0.75rem; line-height: 1.3; text-align: center; font-weight: 500; }
-.tag-setor-autor { background: #f1f5f9; color: #475569; padding: 3px 8px; border-radius: 4px; font-size: 0.75rem; font-weight: 600; border: 1px solid #e2e8f0; }
-
-.tabela-responsiva-container {
-    width: 100%;
-    margin-top: 15px;
-}
-/* ==========================================================================
-   4. CONFIGURAÇÕES DE IMPRESSÃO E REGRAS EXCLUSIVAS PARA CELULAR
-   ========================================================================== */
 @media print {
     #telaLogin, #blocoAlterarSenha, #blocoInclusao, .no-print, .usuario-logado, #tabelaMaster select, #tabelaMaster textarea, #tabelaMaster button { display: none !important; }
     body { background: white !important; padding: 0 !important; margin: 0 !important; }
@@ -166,55 +148,44 @@ th { background: #cbd5e1; color: #1e293b; font-weight: bold; }
     .voto-status { background: transparent !important; color: #000 !important; padding: 0 !important; font-weight: bold !important; }
 }
 
-/* REGRAS ATIVADAS APENAS EM TELAS MENORES QUE 768px (CELULARES) */
-@media screen and (max-width: 768px) {
-    body { padding: 10px; }
-    .container { padding: 15px; }
+/* ESTILOS DA NOVA BARRA DE FLUXO COM ALINHAMENTO FIXADO */
+.barra-paginacao { display: flex; justify-content: space-between; align-items: center; background: #f8fafc; padding: 12px 20px; border-radius: 6px; margin: 15px 0; border: 1px solid #e2e8f0; }
+.switch-label { display: flex !important; align-items: center !important; gap: 10px !important; cursor: pointer; font-weight: 600; color: #334155; margin: 0 !important; }
 
-    .header-sistema {
-        flex-direction: column;
-        align-items: flex-start;
-        gap: 15px;
-    }
-    .usuario-logado {
-        width: 100%;
-        justify-content: space-between;
-    }
+/* Correção estrutural da caixinha azul que estava quebrando */
+.switch-label input[type="checkbox"] {
+    width: 18px !important;
+    height: 18px !important;
+    margin: 0 !important;
+    padding: 0 !important;
+    cursor: pointer;
+    display: inline-block !important;
+}
 
-    #formPreso div {
-        flex-direction: column;
-        align-items: stretch;
-        gap: 10px;
-    }
-    #formPreso div > div { width: 100%; }
+.botoes-navegacao { display: flex; align-items: center; gap: 15px; }
+.botoes-navegacao button { margin-top: 0; padding: 8px 14px; background: #475569; }
+.botoes-navegacao button:hover:not(:disabled) { background: #334155; }
+.botoes-navegacao button:disabled { background: #cbd5e1; color: #94a3b8; cursor: not-allowed; transform: none !important; box-shadow: none !important; }
+#indicadorPagina { font-weight: bold; color: #1e293b; font-size: 0.95rem; }
+/* ESTILOS DA TRAVA DE 6 MESES E DA AUDITORIA AUTOMÁTICA */
+.alerta-trava-tempo {
+    background: #fef2f2 !important;
+    border: 1px solid #fee2e2 !important;
+    color: #991b1b !important;
+    padding: 6px 10px;
+    border-radius: 6px;
+    font-size: 0.75rem;
+    line-height: 1.3;
+    text-align: center;
+    font-weight: 500;
+}
 
-    .barra-paginacao {
-        flex-direction: column;
-        gap: 15px;
-        align-items: center;
-        text-align: center;
-    }
-    .botoes-navegacao {
-        width: 100%;
-        justify-content: space-between;
-    }
-
-    .tabela-responsiva-container {
-        overflow-x: auto;
-        -webkit-overflow-scrolling: touch;
-        border: 1px solid #e2e8f0;
-        border-radius: 4px;
-    }
-    table {
-        margin-top: 0;
-        min-width: 850px;
-    }
-    th, td {
-        padding: 8px 6px !important;
-        font-size: 0.85rem;
-    }
-    #tabelaMaster select, #tabelaMaster textarea {
-        font-size: 0.8rem;
-        padding: 6px;
-    }
+.tag-setor-autor {
+    background: #f1f5f9;
+    color: #475569;
+    padding: 3px 8px;
+    border-radius: 4px;
+    font-size: 0.75rem;
+    font-weight: 600;
+    border: 1px solid #e2e8f0;
 }

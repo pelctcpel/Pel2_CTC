@@ -1,7 +1,7 @@
 // ==========================================================================
 // 1. CONFIGURAÇÕES INICIAIS, VARIÁVEIS GLOBAIS E AUTENTICAÇÃO (8 SETORES)
 // ==========================================================================
-const SCRIPT_URL = 'https://google.com'; 
+const SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbxIjQ02GCL7KS3PQkXxQkasaVX8_lgypnZQeZKcdnXfN7kqFWLlsZxrSoYEJvSuCF2YWA/exec'; 
 
 // TODAS AS SENHAS DE FÁBRICA OFICIAIS ATUALIZADAS
 const SENHAS_PADRAO = {
@@ -39,11 +39,8 @@ function efetuarLogin() {
         painelErro.classList.add('oculto');
         document.getElementById('senhaLogin').value = "";
         setorLogadoAtualmente = setorSelecionado;
-        
-        // ENVIA O SETOR LOGADO PARA O BODY (ESSENCIAL PARA A RESPONSIVIDADE DO CELULAR NO CSS)
-        document.body.setAttribute('data-setor', setorLogadoAtualmente);
-        
         document.getElementById('nomeSetorAtivo').innerText = setorLogadoAtualmente;
+        
         document.getElementById('telaLogin').classList.add('oculto');
         document.getElementById('sistemaPrincipal').classList.remove('oculto');
         document.querySelector('.usuario-logado').classList.remove('oculto');
@@ -57,22 +54,15 @@ function efetuarLogin() {
 function fazerLogout() {
     setorLogadoAtualmente = "";
     paginaAtual = 1; 
-    
-    // REMOVE O ATRIBUTO DO BODY NO LOGOUT
-    document.body.removeAttribute('data-setor');
-    
     document.getElementById('sistemaPrincipal').classList.add('oculto');
     document.getElementById('telaLogin').classList.remove('oculto');
     document.querySelector('.usuario-logado').classList.add('oculto');
 }
 // ==========================================================================
-// 2. ALTERAÇÃO DE SENHAS E INICIALIZAÇÃO DE PERMISSÕES DA TELA
+// 2. ALTERAÇÃO DE SENHAS E CADASTRO COM TRAVA DE SEGURANÇA DE PRONTUÁRIO
 // ==========================================================================
 
-function abrirPainelSenha() { 
-    document.getElementById('blocoAlterarSenha').classList.remove('oculto'); 
-}
-
+function abrirPainelSenha() { document.getElementById('blocoAlterarSenha').classList.remove('oculto'); }
 function fecharPainelSenha() {
     document.getElementById('blocoAlterarSenha').classList.add('oculto');
     document.getElementById('novaSenhaInput').value = "";
@@ -97,7 +87,7 @@ function configurarPermissoesDeTela(setor) {
     document.getElementById('btnGerenciarPopup').classList.remove('oculto');
     carregarCanteirosDinamicos(); 
 
-    if (setor === "Direção") {
+    if(setor === "Direção") {
         document.getElementById('btnExportar').classList.remove('oculto');
         document.getElementById('btnImprimir').classList.remove('oculto');
     } else {
@@ -109,18 +99,19 @@ function configurarPermissoesDeTela(setor) {
     paginaAtual = 1; 
     carregarDados();
 }
-// ==========================================================================
-// 3. FORMULÁRIO DE CADASTRO COM TRAVA AUTOMÁTICA DE 6 MESES POR PRONTUÁRIO
-// ==========================================================================
 
+// TRAVA AUTOMÁTICA NO FORMULÁRIO: Impede o preso de entrar se avaliado nos últimos 6 meses pelo prontuário
 document.getElementById('formPreso').addEventListener('submit', function(e) {
     e.preventDefault();
     const btnCadastro = e.target.querySelector('button[type="submit"]');
+    
+    // Normaliza o prontuário digitado para texto limpo e minúsculo
     const prontuarioDigitado = String(document.getElementById('prontuario').value).trim().toLowerCase();
 
     btnCadastro.disabled = true; 
     btnCadastro.innerText = "Verificando histórico por prontuário...";
 
+    // URL Direta: Varrre o banco bruto na nuvem sem travas ou paginações curtas
     const urlVerificar = `${SCRIPT_URL}?setor=Direcao&pendentes=false&pagina=1&limite=100000`;
 
     fetch(urlVerificar)
@@ -128,20 +119,23 @@ document.getElementById('formPreso').addEventListener('submit', function(e) {
     .then(resposta => {
         const registros = resposta.dados || [];
         
+        // Compara os prontuários de forma totalmente imune a erros de caixa alta/baixa
         const historicoRecente = registros.find(preso => {
             const prontuarioBanco = String(preso.prontuario || "").trim().toLowerCase();
+            
             if (prontuarioBanco === prontuarioDigitado) {
                 const votoDirecao = preso.avaliacoes.find(a => a.setor === "Direção");
                 if (votoDirecao && votoDirecao.dataVoto) {
                     const dataDoVoto = new Date(votoDirecao.dataVoto);
                     const dataLimite = new Date(dataDoVoto);
-                    dataLimite.setMonth(dataLimite.getMonth() + 6); 
+                    dataLimite.setMonth(dataLimite.getMonth() + 6); // Regra dos 180 dias
                     return new Date() < dataLimite;
                 }
             }
             return false;
         });
 
+        // Se encontrar comissão recente para esse prontuário, cancela o cadastro na hora
         if (historicoRecente) {
             const votoDirecao = historicoRecente.avaliacoes.find(a => a.setor === "Direção");
             const dVoto = new Date(votoDirecao.dataVoto);
@@ -154,6 +148,7 @@ document.getElementById('formPreso').addEventListener('submit', function(e) {
             return; 
         }
 
+        // Sem ocorrências recentes: prossegue com a gravação inserindo auditoria do autor
         btnCadastro.innerText = "Cadastrando...";
         const dados = {
             acao: "incluirPreso", id: Date.now(),
@@ -182,7 +177,7 @@ document.getElementById('formPreso').addEventListener('submit', function(e) {
     });
 });
 // ==========================================================================
-// 4. PROCESSAMENTO DE VOTOS E NAVEGAÇÃO DE PÁGINAS DA TABELA
+// 3. ENVIO DE PARECERES INTEGRADO E NAVEGAÇÃO DE PÁGINAS
 // ==========================================================================
 
 function salvarVoto(idPreso, botaoClicado) {
@@ -205,19 +200,11 @@ function salvarVoto(idPreso, botaoClicado) {
 
     fetch(SCRIPT_URL, { method: 'POST', body: JSON.stringify(dadosEnvio) })
     .then(() => { alert('Avaliação registrada com sucesso no banco de dados!'); carregarDados(); })
-    .catch(err => { console.error(err); alert('Sincronizando tabela com banco remoto...'); carregarDados(); });
+    .catch(err => { console.error(err); alert('Processando gravação... Sincronizando tabela.'); carregarDados(); });
 }
 
-function alternarFiltroPendentes(checkbox) { 
-    filtrarApenasPendentes = checkbox.checked; 
-    paginaAtual = 1; 
-    carregarDados(); 
-}
-
-function mudarPagina(direcao) { 
-    paginaAtual += direcao; 
-    carregarDados(); 
-}
+function alternarFiltroPendentes(checkbox) { filtrarApenasPendentes = checkbox.checked; paginaAtual = 1; carregarDados(); }
+function mudarPagina(direcao) { paginaAtual += direcao; carregarDados(); }
 
 function atualizarControlesPagina(totalRegistros) {
     const btnAnterior = document.getElementById('btnPagAnterior');
@@ -234,7 +221,7 @@ function atualizarControlesPagina(totalRegistros) {
     btnProximo.disabled = (paginaAtual === totalPaginas);
 }
 // ==========================================================================
-// 5. TABELA MASTER EXPANDIDA - LEITURA DINÂMICA E FILTRAGEM DE PARECERES
+// 4. TABELA MASTER EXPANDIDA - AUDITORIA, 8 SETORES E EXIBIÇÃO DE MARCADORES
 // ==========================================================================
 
 function carregarDados() {
@@ -258,6 +245,8 @@ function carregarDados() {
         let totalRegistros = respostaServidor.totalRegistros || 0;
         corpo.innerHTML = '';
         
+        // FILTRAGEM DE PENDENTES: Se não for Direção e "Apenas Pendentes" estiver marcado,
+        // remove da lista de exibição os presos cujo diretor já encerrou o processo.
         let presosFiltrados = presos;
         if (setorLogadoAtualmente !== "Direção" && filtrarApenasPendentes) {
             presosFiltrados = presos.filter(preso => {
@@ -266,7 +255,9 @@ function carregarDados() {
                     const dataDoVoto = new Date(votoDirecao.dataVoto);
                     const dataLimite = new Date(dataDoVoto);
                     dataLimite.setMonth(dataLimite.getMonth() + 6);
-                    if (new Date() < dataLimite) { return false; }
+                    if (new Date() < dataLimite) {
+                        return false; 
+                    }
                 }
                 return true;
             });
@@ -291,7 +282,9 @@ function carregarDados() {
                 const dataDoVoto = new Date(votoDirecaoAnterior.dataVoto);
                 const dataLimiteLiberacao = new Date(dataDoVoto);
                 dataLimiteLiberacao.setMonth(dataLimiteLiberacao.getMonth() + 6);
-                if (new Date() < dataLimiteLiberacao) {
+                const dataHoje = new Date();
+
+                if (dataHoje < dataLimiteLiberacao) {
                     estaBloqueadoPorTempo = true;
                     const dVotoStr = dataDoVoto.toLocaleDateString('pt-BR');
                     const dLibStr = dataLimiteLiberacao.toLocaleDateString('pt-BR');
@@ -308,14 +301,20 @@ function carregarDados() {
                 };
 
                 let celulaVotoDirecao = '';
+                
                 if (votoDirecaoAnterior) {
                     const classeVoto = votoDirecaoAnterior.decisao === "SIM" ? "voto-sim" : "voto-nao";
                     let htmlVoto = `<span class="voto-status ${classeVoto}">${votoDirecaoAnterior.decisao}</span><div class="comentario-container">${votoDirecaoAnterior.observacao}</div>`;
-                    celulaVotoDirecao = estaBloqueadoPorTempo ? htmlVoto + "<div style='margin-top:5px;'></div>" + mensagemBloqueioHtml : htmlVoto;
+                    
+                    if (estaBloqueadoPorTempo) {
+                        celulaVotoDirecao = htmlVoto + "<div style='margin-top:5px;'></div>" + mensagemBloqueioHtml;
+                    } else {
+                        celulaVotoDirecao = htmlVoto;
+                    }
                 } else if (estaBloqueadoPorTempo) {
                     celulaVotoDirecao = mensagemBloqueioHtml;
                 } else {
-                    celulaVotoDirecao = `<select style="width:100%; margin-bottom:5px;"><option value="" selected disabled>-- Votar --</option><option value="SIM">SIM</option><option value="NÃO">NÃO</option></select><textarea placeholder="Decisão final..." style="min-height:50px; font-size:0.8rem;"></textarea><button onclick="salvarVoto(${preso.id}, this)" style="padding:4px 8px; font-size:0.8rem; margin-top:2px; width:100%;">Votar</button>`;
+                    celulaVotoDirecao = `<select style="width:100%; margin-bottom:5px;"><option value="" selected disabled>-- Selecione --</option><option value="SIM">SIM</option><option value="NÃO">NÃO</option></select><textarea placeholder="Decisão final..." style="min-height:50px; font-size:0.8rem;"></textarea><button onclick="salvarVoto(${preso.id}, this)" style="padding:4px 8px; font-size:0.8rem; margin-top:2px; width:100%;">Votar</button>`;
                 }
 
                 tr.innerHTML = `<td>${preso.memorando}</td><td><span class="tag-setor-autor">${autorCadastro}</span></td><td>${preso.nome}</td><td>${preso.prontuario}</td><td><strong>${canteiroTexto}</strong></td><td>${formatarCelula("Dised")}</td><td>${formatarCelula("Dioq")}</td><td>${formatarCelula("Jurídico")}</td><td>${formatarCelula("Social")}</td><td>${formatarCelula("Pedagogia")}</td><td>${formatarCelula("Enfermaria")}</td><td>${formatarCelula("Psicologia")}</td><td>${celulaVotoDirecao}</td>`;
@@ -325,11 +324,11 @@ function carregarDados() {
 
                 if (estaBloqueadoPorTempo) {
                     celulaAcao = mensagemBloqueioHtml;
-                } else if (jaAvaliou) {
+                } else if(jaAvaliou) {
                     const classeVoto = jaAvaliou.decisao === "SIM" ? "voto-sim" : "voto-nao";
                     celulaAcao = `<span class="voto-status ${classeVoto}">Realizada: ${jaAvaliou.decisao}</span><div class="comentario-container" style="max-width: 100%;" title="${jaAvaliou.observacao}">${jaAvaliou.observacao}</div>`;
                 } else {
-                    celulaAcao = `<select style="width:100%; margin-bottom:5px;"><option value="" selected disabled>-- Votar --</option><option value="SIM">SIM (Favorável)</option><option value="NÃO">NÃO (Desfavorável)</option></select><textarea placeholder="Justificativa..."></textarea><button onclick="salvarVoto(${preso.id}, this)">Enviar Voto</button>`;
+                    celulaAcao = `<select style="width:100%; margin-bottom:5px;"><option value="" selected disabled>-- Selecione --</option><option value="SIM">SIM (Favorável)</option><option value="NÃO">NÃO (Desfavorável)</option></select><textarea placeholder="Justificativa detalhada..."></textarea><button onclick="salvarVoto(${preso.id}, this)">Enviar Voto</button>`;
                 }
 
                 tr.innerHTML = `<td>${preso.memorando}</td><td><span class="tag-setor-autor">${autorCadastro}</span></td><td>${preso.nome}</td><td>${preso.prontuario}</td><td><strong>${canteiroTexto}</strong></td><td>${celulaAcao}</td>`;
@@ -337,34 +336,45 @@ function carregarDados() {
             corpo.appendChild(tr);
         });
         atualizarControlesPagina(totalRegistros);
-    }).catch((err) => { console.error(err); corpo.innerHTML = '<tr><td colspan="5" style="color:red;">Erro ao processar dados.</td></tr>'; });
+    }).catch((err) => { console.error(err); corpo.innerHTML = '<tr><td colspan="5" style="color:red;">Erro ao buscar dados.</td></tr>'; });
 }
 // ==========================================================================
-// 6. AUTOCOMPLETAR DE MEMORANDOS, BANCO DE CANTEIROS E EXPORTAÇÃO CORRIGIDA
+// 5. NOVA LÓGICA DE AUTOCOMPLETAR DUPLO, EXPORTAÇÃO E CANTEIROS
 // ==========================================================================
 
 function carregarHistoricoDeMemorandos() {
     const selectFiltro = document.getElementById('filtroMemorando');
     const datalistCadastro = document.getElementById('historicoMemorandos');
+    
     if (!selectFiltro && !datalistCadastro) return;
 
-    fetch(`${SCRIPT_URL}?buscar=memorandos`).then(res => res.json()).then(memorandos => {
-        if (selectFiltro) { selectFiltro.innerHTML = '<option value="">🔍 Filtrar por memorando... (Exibir Todos)</option>'; }
+    fetch(`${SCRIPT_URL}?buscar=memorandos`)
+    .then(res => res.json())
+    .then(memorandos => {
+        if (selectFiltro) {
+            selectFiltro.innerHTML = '<option value="">🔍 Filtrar por número de memorando... (Exibir Todos)</option>'; 
+        }
         if (datalistCadastro) { datalistCadastro.innerHTML = ''; }
+
         if (!memorandos || memorandos.length === 0) return;
 
         memorandos.forEach(memo => {
             if (!memo || String(memo).trim() === "") return;
+
             if (selectFiltro) {
                 const optSelect = document.createElement('option');
-                optSelect.value = memo; optSelect.textContent = memo; selectFiltro.appendChild(optSelect);
+                optSelect.value = memo; optSelect.textContent = memo;
+                selectFiltro.appendChild(optSelect);
             }
+
             if (datalistCadastro) {
                 const optData = document.createElement('option');
-                optData.value = memo; datalistCadastro.appendChild(optData);
+                optData.value = memo;
+                datalistCadastro.appendChild(optData);
             }
         });
-    }).catch(err => console.error("Erro ao sincronizar memorandos:", err));
+    })
+    .catch(err => console.error("Erro ao sincronizar histórico de memorandos:", err));
 }
 
 function filtrarPorMemorando() { paginaAtual = 1; carregarDados(); }
@@ -375,16 +385,12 @@ function exportarExcel() {
         let ServerLinha = [];
         for (let j = 0; j < tabela.rows[i].cells.length; j++) {
             let celula = tabela.rows[i].cells[j];
-            // CORREÇÃO VISUAL DA EXPORTAÇÃO COM SUPORTE A STRINGS LIMPAS E CONDICIONAIS
-            let valorTexto = celula.querySelector('select') ? "Pendente" : celula.innerText.replace(/\n/g, " ").trim();
-            ServerLinha.push('"' + valorTexto + '"');
+            ServerLinha.push('"' + (celula.querySelector('select') ? "Pendente" : celula.innerText.replace(/\n/g, " ").trim()) + '"');
         }
         textoCsv.push(ServerLinha.join(";"));
     }
-    let link = document.createElement("a"); 
-    link.setAttribute("href", encodeURI("data:text/csv;charset=utf-8,\uFEFF" + textoCsv.join("\n")));
-    link.setAttribute("download", "Relatorio_CTC_Direcao.csv"); 
-    document.body.appendChild(link); link.click(); document.body.removeChild(link);
+    let link = document.createElement("a"); link.setAttribute("href", encodeURI("data:text/csv;charset=utf-8,\uFEFF" + textoCsv.join("\n")));
+    link.setAttribute("download", "Relatorio_CTC_Direcao.csv"); document.body.appendChild(link); link.click(); document.body.removeChild(link);
 }
 
 function abrirModalCanteiros() { document.getElementById('modalCanteiros').classList.remove('oculto'); carregarCanteirosDinamicos(); }
