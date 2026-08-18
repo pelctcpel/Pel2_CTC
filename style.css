@@ -42,6 +42,7 @@ label {
     margin: 10px 0 5px; 
     color: #334155;
 }
+
 /* ==========================================================================
    2. INPUTS, FORMULÁRIOS E ELEMENTOS DE BOTÕES
    ========================================================================== */
@@ -111,6 +112,7 @@ th, td { border: 1px solid #e2e8f0; padding: 10px; text-align: left; }
 th { background: #cbd5e1; color: #1e293b; font-weight: bold; }
 #tabelaMaster td { white-space: normal; word-break: keep-all; word-wrap: break-word; vertical-align: top; }
 
+/* REGRAS DE MARCADORES DISCRETOS DE VOTO */
 .voto-status { display: inline-block; padding: 2px 6px; border-radius: 4px; font-weight: bold; margin-bottom: 4px; white-space: nowrap; }
 .voto-sim { background: #d1fae5; color: #065f46; }
 .voto-nao { background: #fee2e2; color: #991b1b; }
@@ -118,6 +120,7 @@ th { background: #cbd5e1; color: #1e293b; font-weight: bold; }
 .comentario-container { width: 100% !important; max-width: 180px !important; max-height: 100px; overflow-y: auto; font-size: 0.85rem; line-height: 1.3; word-wrap: break-word; padding: 4px; background: #f8fafc; border-radius: 4px; display: block; }
 #tabelaMaster .comentario-container { max-width: 100% !important; }
 
+/* MODAIS E POPUPS INTERNOS */
 .modal-overlay { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(15, 23, 42, 0.6); backdrop-filter: blur(4px); display: flex; justify-content: center; align-items: center; z-index: 9999; }
 .modal-box { background: white; width: 100%; max-width: 600px; border-radius: 8px; padding: 25px; box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.15), 0 10px 10px -5px rgba(0, 0, 0, 0.04); animation: modalEntrada 0.2s ease-out; }
 .modal-header { display: flex; justify-content: space-between; align-items: center; border-bottom: 2px solid #f1f5f9; padding-bottom: 12px; margin-bottom: 15px; }
@@ -128,7 +131,7 @@ th { background: #cbd5e1; color: #1e293b; font-weight: bold; }
 .modal-table-container table { margin-top: 0; }
 @keyframes modalEntrada { from { transform: scale(0.95); opacity: 0; } to { transform: scale(1); opacity: 1; } }
 /* ==========================================================================
-   4. INTERATIVIDADE, SUPORTE A IMPRESSÃO E AJUSTE DO CHECKBOX VISUAL
+   4. INTERATIVIDADE, IMPRESSÃO, PAGINAÇÃO E MODO INTELIGÊNCIA TRANSLÚCIDO
    ========================================================================== */
 #tabelaMaster th, #tabelaMaster td { padding: 14px 12px; }
 #tabelaMaster select, #tabelaMaster textarea { border: 1px solid #cbd5e1; border-radius: 6px; padding: 8px 10px; font-size: 0.85rem; transition: all 0.2s ease; }
@@ -138,36 +141,18 @@ th { background: #cbd5e1; color: #1e293b; font-weight: bold; }
 #tabelaMaster button:hover { background: #1d4ed8; transform: translateY(-1px); box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1); }
 #tabelaMaster button:active { transform: translateY(0); }
 
-@media print {
-    #telaLogin, #blocoAlterarSenha, #blocoInclusao, .no-print, .usuario-logado, #tabelaMaster select, #tabelaMaster textarea, #tabelaMaster button { display: none !important; }
-    body { background: white !important; padding: 0 !important; margin: 0 !important; }
-    .container { box-shadow: none !important; border: none !important; max-width: 100% !important; padding: 0 !important; background: transparent !important; }
-    .bloco { background: transparent !important; border: none !important; padding: 0 !important; margin-bottom: 10px !important; }
-    #tabelaMaster { width: 100% !important; border-collapse: collapse !important; font-size: 0.8rem !important; }
-    #tabelaMaster th, #tabelaMaster td { padding: 6px 8px !important; border: 1px solid #000 !important; color: #000 !important; white-space: normal !important; word-break: keep-all !important; }
-    .voto-status { background: transparent !important; color: #000 !important; padding: 0 !important; font-weight: bold !important; }
-}
-
-/* ESTILOS DA NOVA BARRA DE FLUXO COM ALINHAMENTO FIXADO */
+/* CONTROLES DA BARRA DE PAGINAÇÃO */
 .barra-paginacao { display: flex; justify-content: space-between; align-items: center; background: #f8fafc; padding: 12px 20px; border-radius: 6px; margin: 15px 0; border: 1px solid #e2e8f0; }
 .switch-label { display: flex !important; align-items: center !important; gap: 10px !important; cursor: pointer; font-weight: 600; color: #334155; margin: 0 !important; }
-
-/* Correção estrutural da caixinha azul que estava quebrando */
-.switch-label input[type="checkbox"] {
-    width: 18px !important;
-    height: 18px !important;
-    margin: 0 !important;
-    padding: 0 !important;
-    cursor: pointer;
-    display: inline-block !important;
-}
+.switch-label input[type="checkbox"] { width: 18px !important; height: 18px !important; margin: 0 !important; padding: 0 !important; cursor: pointer; display: inline-block !important; }
 
 .botoes-navegacao { display: flex; align-items: center; gap: 15px; }
 .botoes-navegacao button { margin-top: 0; padding: 8px 14px; background: #475569; }
 .botoes-navegacao button:hover:not(:disabled) { background: #334155; }
 .botoes-navegacao button:disabled { background: #cbd5e1; color: #94a3b8; cursor: not-allowed; transform: none !important; box-shadow: none !important; }
 #indicadorPagina { font-weight: bold; color: #1e293b; font-size: 0.95rem; }
-/* ESTILOS DA TRAVA DE 6 MESES E DA AUDITORIA AUTOMÁTICA */
+
+/* TRAVA DE TEMPO DE AUDITORIA (6 MESES) */
 .alerta-trava-tempo {
     background: #fef2f2 !important;
     border: 1px solid #fee2e2 !important;
@@ -180,52 +165,76 @@ th { background: #cbd5e1; color: #1e293b; font-weight: bold; }
     font-weight: 500;
 }
 
-.tag-setor-autor {
-    background: #f1f5f9;
-    color: #475569;
-    padding: 3px 8px;
-    border-radius: 4px;
-    font-size: 0.75rem;
-    font-weight: 600;
-    border: 1px solid #e2e8f0;
+.tag-setor-autor { background: #f1f5f9; color: #475569; padding: 3px 8px; border-radius: 4px; font-size: 0.75rem; font-weight: 600; border: 1px solid #e2e8f0; }
+
+/* REGRAS OFICIAIS DE SUPORTE A IMPRESSÃO */
+@media print {
+    #telaLogin, #blocoAlterarSenha, #blocoInclusao, .no-print, .usuario-logado, #tabelaMaster select, #tabelaMaster textarea, #tabelaMaster button { display: none !important; }
+    body { background: white !important; padding: 0 !important; margin: 0 !important; }
+    .container { box-shadow: none !important; border: none !important; max-width: 100% !important; padding: 0 !important; background: transparent !important; }
+    .bloco { background: transparent !important; border: none !important; padding: 0 !important; margin-bottom: 10px !important; }
+    #tabelaMaster { width: 100% !important; border-collapse: collapse !important; font-size: 0.8rem !important; }
+    #tabelaMaster th, #tabelaMaster td { padding: 6px 8px !important; border: 1px solid #000 !important; color: #000 !important; white-space: normal !important; word-break: keep-all !important; }
+    .voto-status { background: transparent !important; color: #000 !important; padding: 0 !important; font-weight: bold !important; }
 }
+
+/* RESPONSIVIDADE ESTRETA PARA DISPOSITIVOS MÓVEIS (CELULARES) */
 @media screen and (max-width: 768px) {
-    /* 1. Trava a página inteira no limite exato da tela do celular */
-    body { 
-        padding: 5px !important; 
-        margin: 0 !important; 
-        overflow-x: hidden !important; /* Proíbe o site de dançar para os lados */
-    }
-    
-    .container { 
-        width: 100% !important; 
-        max-width: 100% !important; 
-        padding: 10px !important; 
-        margin: 0 !important;
-    }
+    body { padding: 5px !important; margin: 0 !important; overflow-x: hidden !important; }
+    .container { width: 100% !important; max-width: 100% !important; padding: 10px !important; margin: 0 !important; }
+    #formPreso div { flex-direction: column !important; align-items: stretch !important; gap: 10px !important; }
+    #formPreso div > div { width: 100% !important; min-width: 100% !important; }
+    .tabela-responsiva-container { width: 100% !important; max-width: calc(100vw - 30px) !important; overflow-x: auto !important; -webkit-overflow-scrolling: touch !important; border: 1px solid #e2e8f0 !important; background: white !important; }
+    #tabelaMaster { min-width: 1000px !important; }
+}
 
-    /* 2. Empilha os inputs do formulário perfeitamente */
-    #formPreso div { 
-        flex-direction: column !important; 
-        align-items: stretch !important; 
-        gap: 10px !important; 
-    }
-    #formPreso div > div { 
-        width: 100% !important; 
-        min-width: 100% !important; 
-    }
+/* ==========================================================================
+   NOVA MARCA D'ÁGUA PROFISSIONAL - FAIXA VERMELHA TRANSLÚCIDA
+   ========================================================================== */
+.linha-inteligencia {
+    position: relative !important;
+    background-color: #fff5f5 !important; /* Destaque leve no fundo */
+}
 
-    /* 3. Isola a tabela com rolagem lateral autônoma sem quebrar o site */
-    .tabela-responsiva-container { 
-        width: 100% !important;
-        max-width: calc(100vw - 30px) !important; /* Trava no tamanho visível da tela */
-        overflow-x: auto !important; 
-        -webkit-overflow-scrolling: touch !important; 
-        border: 1px solid #e2e8f0 !important; 
-        background: white !important;
-    }
+/* Injeta a faixa transversal semitransparente por cima de toda a linha */
+.linha-inteligencia::after {
+    content: "🔒 BARRADO PELA INTELIGÊNCIA";
+    position: absolute;
+    left: 15%; /* Margem nas laterais para centralizar */
+    top: 50%;
+    transform: translateY(-50%);
+    width: 70%; /* Comprimento da faixa vermelha */
+    height: 34px; /* Espessura idêntica à do rascunho */
     
-    #tabelaMaster { 
-        min-width: 1000px !important; /* Força a tabela a manter os dados legíveis na horizontal */
-    }
+    /* TRANSPARÊNCIA SUAVE: Reduzido para 0.45 para os dados ficarem bem visíveis por trás */
+    background-color: rgba(127, 29, 29, 0.45); 
+    border: 1px solid rgba(153, 27, 27, 0.5);
+    border-radius: 6px;
+    
+    /* Formatação e centralização do texto do aviso */
+    color: #ffffff !important;
+    font-size: 0.95rem;
+    font-weight: bold;
+    letter-spacing: 1.5px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    
+    pointer-events: none; /* Permite ler o que está embaixo sem travar o mouse */
+    z-index: 999; /* Fica acima de todas as camadas */
+    box-shadow: 0 3px 10px rgba(0, 0, 0, 0.12);
+}
+
+
+/* Atenua e bloqueia os elementos nativos da linha ocultada */
+.linha-inteligencia select, 
+.linha-inteligencia textarea, 
+.linha-inteligencia button {
+    opacity: 0.15 !important;
+    pointer-events: none !important;
+}
+
+.voto-inteligencia {
+    background-color: #7f1d1d;
+    color: #fef2f2;
 }

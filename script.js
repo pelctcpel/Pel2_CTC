@@ -3,7 +3,7 @@
 // ==========================================================================
 const SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbxIjQ02GCL7KS3PQkXxQkasaVX8_lgypnZQeZKcdnXfN7kqFWLlsZxrSoYEJvSuCF2YWA/exec'; 
 
-// TODAS AS SENHAS DE FÁBRICA OFICIAIS ATUALIZADAS
+// SENHAS PADRÃO UTILIZADAS COMO VALIDAÇÃO INICIAL
 const SENHAS_PADRAO = {
     "Dised": "dised123",
     "Dioq": "dioq123",
@@ -40,7 +40,7 @@ function efetuarLogin() {
         document.getElementById('senhaLogin').value = "";
         setorLogadoAtualmente = setorSelecionado;
         
-        // Define o atributo no body para controle estrito de responsividade
+        // Define o atributo no body para controle de responsividade no celular
         document.body.setAttribute('data-setor', setorLogadoAtualmente);
         
         document.getElementById('nomeSetorAtivo').innerText = setorLogadoAtualmente;
@@ -66,7 +66,10 @@ function fazerLogout() {
 // 2. ALTERAÇÃO DE SENHAS E INICIALIZAÇÃO DE PERMISSÕES DA TELA
 // ==========================================================================
 
-function abrirPainelSenha() { document.getElementById('blocoAlterarSenha').classList.remove('oculto'); }
+function abrirPainelSenha() { 
+    document.getElementById('blocoAlterarSenha').classList.remove('oculto'); 
+}
+
 function fecharPainelSenha() {
     document.getElementById('blocoAlterarSenha').classList.add('oculto');
     document.getElementById('novaSenhaInput').value = "";
@@ -91,7 +94,7 @@ function configurarPermissoesDeTela(setor) {
     document.getElementById('btnGerenciarPopup').classList.remove('oculto');
     carregarCanteirosDinamicos(); 
 
-    if(setor === "Direção") {
+    if (setor === "Direção") {
         document.getElementById('btnExportar').classList.remove('oculto');
         document.getElementById('btnImprimir').classList.remove('oculto');
     } else {
@@ -104,7 +107,7 @@ function configurarPermissoesDeTela(setor) {
     carregarDados();
 }
 // ==========================================================================
-// 3. FORMULÁRIO DE CADASTRO COM TRAVA DE PRONTUÁRIO E GRAVAÇÃO DE PARECERES
+// 3. CADASTRO E GRAVAÇÃO DE PARECERES COM INJEÇÃO AUTOMÁTICA DE SEGURANÇA
 // ==========================================================================
 
 document.getElementById('formPreso').addEventListener('submit', function(e) {
@@ -149,13 +152,19 @@ document.getElementById('formPreso').addEventListener('submit', function(e) {
         }
 
         btnCadastro.innerText = "Cadastrando...";
+        
+        // CHAVE INJETADA: Captura a assinatura válida do usuário logado
+        const tokenValidador = obterSenhaDoSetor(setorLogadoAtualmente);
+
         const dados = {
-            acao: "incluirPreso", id: Date.now(),
+            acao: "incluirPreso", 
+            id: Date.now(),
             memorando: document.getElementById('memo').value,
             quemIncluiu: setorLogadoAtualmente, 
             nome: document.getElementById('nomePreso').value,
             prontuario: document.getElementById('prontuario').value,
-            canteiro: document.getElementById('canteiroTrabalho').value
+            canteiro: document.getElementById('canteiroTrabalho').value,
+            senhaValidadora: tokenValidador // <<< INJETADO COM SUCESSO NO CADASTRO
         };
 
         return fetch(SCRIPT_URL, { method: 'POST', body: JSON.stringify(dados) })
@@ -188,10 +197,17 @@ function salvarVoto(idPreso, botaoClicado) {
 
     botaoClicado.disabled = true; botaoClicado.innerText = "Enviando...";
     const obs = campoObservacao ? campoObservacao.value : "";
+    
+    // CHAVE INJETADA: Captura a assinatura válida do usuário logado
+    const tokenValidador = obterSenhaDoSetor(setorLogadoAtualmente);
 
     const dadosEnvio = {
-        acao: "salvarAvaliacao", idPreso: idPreso,
-        setor: setorLogadoAtualmente, decisao: decisao, observacao: obs
+        acao: "salvarAvaliacao", 
+        idPreso: idPreso,
+        setor: setorLogadoAtualmente, 
+        decisao: decisao, 
+        observacao: obs,
+        senhaValidadora: tokenValidador // <<< INJETADO COM SUCESSO NO ENVIO DE VOTOS
     };
 
     fetch(SCRIPT_URL, { method: 'POST', body: JSON.stringify(dadosEnvio) })
@@ -217,7 +233,7 @@ function atualizarControlesPagina(totalRegistros) {
     btnProximo.disabled = (paginaAtual === totalPaginas);
 }
 // ==========================================================================
-// 4. TABELA MASTER EXPANDIDA - FILTRAGEM AUTOMÁTICA E SUPORTE A CLASSES CSS
+// 4. TABELA MASTER EXPANDIDA - FILTRAGEM AUTOMÁTICA E REGRAS DE EXIBIÇÃO
 // ==========================================================================
 
 function carregarDados() {
@@ -270,11 +286,9 @@ function carregarDados() {
             let estaBloqueadoPorTempo = false;
             let mensagemBloqueioHtml = "";
 
-            // Identifica se o preso foi encaminhado à Inteligência pelo Diretor
             const ehInteligencia = votoDirecaoAnterior && votoDirecaoAnterior.decisao === "INTELIGÊNCIA";
 
             if (ehInteligencia) {
-                // Adiciona apenas a classe. O CSS via ::after cuida de projetar a marca d'água perfeitamente
                 tr.classList.add('linha-inteligencia');
             } else if (votoDirecaoAnterior && votoDirecaoAnterior.dataVoto) {
                 const dataDoVoto = new Date(votoDirecaoAnterior.dataVoto);
@@ -320,7 +334,7 @@ function carregarDados() {
                 const jaAvaliou = preso.avaliacoes.find(a => String(a.setor).toLowerCase().normalize("NFD").replace(/[\u0300-\u036f]/g, "") === String(setorLogadoAtualmente).toLowerCase().normalize("NFD").replace(/[\u0300-\u036f]/g, ""));
 
                 if (ehInteligencia) {
-                    celulaAcao = `<div class="alerta-trava-tempo" style="background:#7f1d1d !important; color:#fff !important; border:none !important;">🔒 Bloqueado pela Inteligência</div>`;
+                    celulaAcao = `<span style="color: #cbd5e1; font-weight: bold;">-</span>`;
                 } else if (estaBloqueadoPorTempo) {
                     celulaAcao = mensagemBloqueioHtml;
                 } else if (jaAvaliou) {
