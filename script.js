@@ -39,8 +39,11 @@ function efetuarLogin() {
         painelErro.classList.add('oculto');
         document.getElementById('senhaLogin').value = "";
         setorLogadoAtualmente = setorSelecionado;
-        document.getElementById('nomeSetorAtivo').innerText = setorLogadoAtualmente;
         
+        // Define o atributo no body para controle estrito de responsividade
+        document.body.setAttribute('data-setor', setorLogadoAtualmente);
+        
+        document.getElementById('nomeSetorAtivo').innerText = setorLogadoAtualmente;
         document.getElementById('telaLogin').classList.add('oculto');
         document.getElementById('sistemaPrincipal').classList.remove('oculto');
         document.querySelector('.usuario-logado').classList.remove('oculto');
@@ -54,12 +57,13 @@ function efetuarLogin() {
 function fazerLogout() {
     setorLogadoAtualmente = "";
     paginaAtual = 1; 
+    document.body.removeAttribute('data-setor');
     document.getElementById('sistemaPrincipal').classList.add('oculto');
     document.getElementById('telaLogin').classList.remove('oculto');
     document.querySelector('.usuario-logado').classList.add('oculto');
 }
 // ==========================================================================
-// 2. ALTERAÇÃO DE SENHAS E CADASTRO COM TRAVA DE SEGURANÇA DE PRONTUÁRIO
+// 2. ALTERAÇÃO DE SENHAS E INICIALIZAÇÃO DE PERMISSÕES DA TELA
 // ==========================================================================
 
 function abrirPainelSenha() { document.getElementById('blocoAlterarSenha').classList.remove('oculto'); }
@@ -99,19 +103,18 @@ function configurarPermissoesDeTela(setor) {
     paginaAtual = 1; 
     carregarDados();
 }
+// ==========================================================================
+// 3. FORMULÁRIO DE CADASTRO COM TRAVA DE PRONTUÁRIO E GRAVAÇÃO DE PARECERES
+// ==========================================================================
 
-// TRAVA AUTOMÁTICA NO FORMULÁRIO: Impede o preso de entrar se avaliado nos últimos 6 meses pelo prontuário
 document.getElementById('formPreso').addEventListener('submit', function(e) {
     e.preventDefault();
     const btnCadastro = e.target.querySelector('button[type="submit"]');
-    
-    // Normaliza o prontuário digitado para texto limpo e minúsculo
     const prontuarioDigitado = String(document.getElementById('prontuario').value).trim().toLowerCase();
 
     btnCadastro.disabled = true; 
     btnCadastro.innerText = "Verificando histórico por prontuário...";
 
-    // URL Direta: Varrre o banco bruto na nuvem sem travas ou paginações curtas
     const urlVerificar = `${SCRIPT_URL}?setor=Direcao&pendentes=false&pagina=1&limite=100000`;
 
     fetch(urlVerificar)
@@ -119,23 +122,20 @@ document.getElementById('formPreso').addEventListener('submit', function(e) {
     .then(resposta => {
         const registros = resposta.dados || [];
         
-        // Compara os prontuários de forma totalmente imune a erros de caixa alta/baixa
         const historicoRecente = registros.find(preso => {
             const prontuarioBanco = String(preso.prontuario || "").trim().toLowerCase();
-            
             if (prontuarioBanco === prontuarioDigitado) {
                 const votoDirecao = preso.avaliacoes.find(a => a.setor === "Direção");
                 if (votoDirecao && votoDirecao.dataVoto) {
                     const dataDoVoto = new Date(votoDirecao.dataVoto);
                     const dataLimite = new Date(dataDoVoto);
-                    dataLimite.setMonth(dataLimite.getMonth() + 6); // Regra dos 180 dias
+                    dataLimite.setMonth(dataLimite.getMonth() + 6); 
                     return new Date() < dataLimite;
                 }
             }
             return false;
         });
 
-        // Se encontrar comissão recente para esse prontuário, cancela o cadastro na hora
         if (historicoRecente) {
             const votoDirecao = historicoRecente.avaliacoes.find(a => a.setor === "Direção");
             const dVoto = new Date(votoDirecao.dataVoto);
@@ -148,7 +148,6 @@ document.getElementById('formPreso').addEventListener('submit', function(e) {
             return; 
         }
 
-        // Sem ocorrências recentes: prossegue com a gravação inserindo auditoria do autor
         btnCadastro.innerText = "Cadastrando...";
         const dados = {
             acao: "incluirPreso", id: Date.now(),
@@ -176,9 +175,6 @@ document.getElementById('formPreso').addEventListener('submit', function(e) {
         btnCadastro.innerText = "Cadastrar Preso"; 
     });
 });
-// ==========================================================================
-// 3. ENVIO DE PARECERES INTEGRADO E NAVEGAÇÃO DE PÁGINAS
-// ==========================================================================
 
 function salvarVoto(idPreso, botaoClicado) {
     if (!botaoClicado) return;
@@ -188,7 +184,7 @@ function salvarVoto(idPreso, botaoClicado) {
 
     if (!campoDecisao) { alert("Campo de voto não encontrado."); return; }
     const decisao = campoDecisao.value;
-    if (!decisao || decisao.trim() === "") { alert("Selecione SIM ou NÃO antes de votar!"); return; }
+    if (!decisao || decisao.trim() === "") { alert("Selecione uma opção antes de votar!"); return; }
 
     botaoClicado.disabled = true; botaoClicado.innerText = "Enviando...";
     const obs = campoObservacao ? campoObservacao.value : "";
@@ -221,7 +217,7 @@ function atualizarControlesPagina(totalRegistros) {
     btnProximo.disabled = (paginaAtual === totalPaginas);
 }
 // ==========================================================================
-// 4. TABELA MASTER EXPANDIDA - AUDITORIA, 8 SETORES E EXIBIÇÃO DE MARCADORES
+// 4. TABELA MASTER EXPANDIDA - FILTRAGEM AUTOMÁTICA E SUPORTE A CLASSES CSS
 // ==========================================================================
 
 function carregarDados() {
@@ -245,8 +241,6 @@ function carregarDados() {
         let totalRegistros = respostaServidor.totalRegistros || 0;
         corpo.innerHTML = '';
         
-        // FILTRAGEM DE PENDENTES: Se não for Direção e "Apenas Pendentes" estiver marcado,
-        // remove da lista de exibição os presos cujo diretor já encerrou o processo.
         let presosFiltrados = presos;
         if (setorLogadoAtualmente !== "Direção" && filtrarApenasPendentes) {
             presosFiltrados = presos.filter(preso => {
@@ -255,9 +249,7 @@ function carregarDados() {
                     const dataDoVoto = new Date(votoDirecao.dataVoto);
                     const dataLimite = new Date(dataDoVoto);
                     dataLimite.setMonth(dataLimite.getMonth() + 6);
-                    if (new Date() < dataLimite) {
-                        return false; 
-                    }
+                    if (new Date() < dataLimite) { return false; }
                 }
                 return true;
             });
@@ -278,7 +270,13 @@ function carregarDados() {
             let estaBloqueadoPorTempo = false;
             let mensagemBloqueioHtml = "";
 
-            if (votoDirecaoAnterior && votoDirecaoAnterior.dataVoto) {
+            // Identifica se o preso foi encaminhado à Inteligência pelo Diretor
+            const ehInteligencia = votoDirecaoAnterior && votoDirecaoAnterior.decisao === "INTELIGÊNCIA";
+
+            if (ehInteligencia) {
+                // Adiciona apenas a classe. O CSS via ::after cuida de projetar a marca d'água perfeitamente
+                tr.classList.add('linha-inteligencia');
+            } else if (votoDirecaoAnterior && votoDirecaoAnterior.dataVoto) {
                 const dataDoVoto = new Date(votoDirecaoAnterior.dataVoto);
                 const dataLimiteLiberacao = new Date(dataDoVoto);
                 dataLimiteLiberacao.setMonth(dataLimiteLiberacao.getMonth() + 6);
@@ -296,42 +294,43 @@ function carregarDados() {
                 const formatarCelula = (setorNome) => {
                     const aval = preso.avaliacoes.find(a => String(a.setor).toLowerCase().normalize("NFD").replace(/[\u0300-\u036f]/g, "") === String(setorNome).toLowerCase().normalize("NFD").replace(/[\u0300-\u036f]/g, ""));
                     if (!aval) return `<span class="voto-status voto-pendente">Pendente</span>`;
-                    const classeVoto = aval.decisao === "SIM" ? "voto-sim" : "voto-nao";
+                    
+                    let classeVoto = aval.decisao === "SIM" ? "voto-sim" : "voto-nao";
+                    if (aval.decisao === "INTELIGÊNCIA") classeVoto = "voto-inteligencia";
+                    
                     return `<span class="voto-status ${classeVoto}">${aval.decisao}</span><div class="comentario-container" title="${aval.observacao}">${aval.observacao}</div>`;
                 };
 
                 let celulaVotoDirecao = '';
-                
                 if (votoDirecaoAnterior) {
-                    const classeVoto = votoDirecaoAnterior.decisao === "SIM" ? "voto-sim" : "voto-nao";
-                    let htmlVoto = `<span class="voto-status ${classeVoto}">${votoDirecaoAnterior.decisao}</span><div class="comentario-container">${votoDirecaoAnterior.observacao}</div>`;
+                    let classeVoto = votoDirecaoAnterior.decisao === "SIM" ? "voto-sim" : "voto-nao";
+                    if (votoDirecaoAnterior.decisao === "INTELIGÊNCIA") classeVoto = "voto-inteligencia";
                     
-                    if (estaBloqueadoPorTempo) {
-                        celulaVotoDirecao = htmlVoto + "<div style='margin-top:5px;'></div>" + mensagemBloqueioHtml;
-                    } else {
-                        celulaVotoDirecao = htmlVoto;
-                    }
+                    let htmlVoto = `<span class="voto-status ${classeVoto}">${votoDirecaoAnterior.decisao}</span><div class="comentario-container">${votoDirecaoAnterior.observacao}</div>`;
+                    celulaVotoDirecao = estaBloqueadoPorTempo && !ehInteligencia ? htmlVoto + "<div style='margin-top:5px;'></div>" + mensagemBloqueioHtml : htmlVoto;
                 } else if (estaBloqueadoPorTempo) {
                     celulaVotoDirecao = mensagemBloqueioHtml;
                 } else {
-                    celulaVotoDirecao = `<select style="width:100%; margin-bottom:5px;"><option value="" selected disabled>-- Selecione --</option><option value="SIM">SIM</option><option value="NÃO">NÃO</option></select><textarea placeholder="Decisão final..." style="min-height:50px; font-size:0.8rem;"></textarea><button onclick="salvarVoto(${preso.id}, this)" style="padding:4px 8px; font-size:0.8rem; margin-top:2px; width:100%;">Votar</button>`;
+                    celulaVotoDirecao = `<select style="width:100%; margin-bottom:5px;"><option value="" selected disabled>-- Selecione --</option><option value="SIM">SIM</option><option value="NÃO">NÃO</option><option value="INTELIGÊNCIA">INTELIGÊNCIA ⚠️</option></select><textarea placeholder="Decisão final..." style="min-height:50px; font-size:0.8rem;"></textarea><button onclick="salvarVoto(${preso.id}, this)" style="padding:4px 8px; font-size:0.8rem; margin-top:2px; width:100%;">Votar</button>`;
                 }
 
-                tr.innerHTML = `<td>${preso.memorando}</td><td><span class="tag-setor-autor">${autorCadastro}</span></td><td>${preso.nome}</td><td>${preso.prontuario}</td><td><strong>${canteiroTexto}</strong></td><td>${formatarCelula("Dised")}</td><td>${formatarCelula("Dioq")}</td><td>${formatarCelula("Jurídico")}</td><td>${formatarCelula("Social")}</td><td>${formatarCelula("Pedagogia")}</td><td>${formatarCelula("Enfermaria")}</td><td>${formatarCelula("Psicologia")}</td><td>${celulaVotoDirecao}</td>`;
+                tr.innerHTML += `<td>${preso.memorando}</td><td><span class="tag-setor-autor">${autorCadastro}</span></td><td>${preso.nome}</td><td>${preso.prontuario}</td><td><strong>${canteiroTexto}</strong></td><td>${formatarCelula("Dised")}</td><td>${formatarCelula("Dioq")}</td><td>${formatarCelula("Jurídico")}</td><td>${formatarCelula("Social")}</td><td>${formatarCelula("Pedagogia")}</td><td>${formatarCelula("Enfermaria")}</td><td>${formatarCelula("Psicologia")}</td><td>${celulaVotoDirecao}</td>`;
             } else {
                 let celulaAcao = '';
                 const jaAvaliou = preso.avaliacoes.find(a => String(a.setor).toLowerCase().normalize("NFD").replace(/[\u0300-\u036f]/g, "") === String(setorLogadoAtualmente).toLowerCase().normalize("NFD").replace(/[\u0300-\u036f]/g, ""));
 
-                if (estaBloqueadoPorTempo) {
+                if (ehInteligencia) {
+                    celulaAcao = `<div class="alerta-trava-tempo" style="background:#7f1d1d !important; color:#fff !important; border:none !important;">🔒 Bloqueado pela Inteligência</div>`;
+                } else if (estaBloqueadoPorTempo) {
                     celulaAcao = mensagemBloqueioHtml;
-                } else if(jaAvaliou) {
+                } else if (jaAvaliou) {
                     const classeVoto = jaAvaliou.decisao === "SIM" ? "voto-sim" : "voto-nao";
                     celulaAcao = `<span class="voto-status ${classeVoto}">Realizada: ${jaAvaliou.decisao}</span><div class="comentario-container" style="max-width: 100%;" title="${jaAvaliou.observacao}">${jaAvaliou.observacao}</div>`;
                 } else {
                     celulaAcao = `<select style="width:100%; margin-bottom:5px;"><option value="" selected disabled>-- Selecione --</option><option value="SIM">SIM (Favorável)</option><option value="NÃO">NÃO (Desfavorável)</option></select><textarea placeholder="Justificativa detalhada..."></textarea><button onclick="salvarVoto(${preso.id}, this)">Enviar Voto</button>`;
                 }
 
-                tr.innerHTML = `<td>${preso.memorando}</td><td><span class="tag-setor-autor">${autorCadastro}</span></td><td>${preso.nome}</td><td>${preso.prontuario}</td><td><strong>${canteiroTexto}</strong></td><td>${celulaAcao}</td>`;
+                tr.innerHTML += `<td>${preso.memorando}</td><td><span class="tag-setor-autor">${autorCadastro}</span></td><td>${preso.nome}</td><td>${preso.prontuario}</td><td><strong>${canteiroTexto}</strong></td><td>${celulaAcao}</td>`;
             }
             corpo.appendChild(tr);
         });
@@ -385,12 +384,15 @@ function exportarExcel() {
         let ServerLinha = [];
         for (let j = 0; j < tabela.rows[i].cells.length; j++) {
             let celula = tabela.rows[i].cells[j];
-            ServerLinha.push('"' + (celula.querySelector('select') ? "Pendente" : celula.innerText.replace(/\n/g, " ").trim()) + '"');
+            let valorTexto = celula.querySelector('select') ? "Pendente" : celula.innerText.replace(/\n/g, " ").trim();
+            ServerLinha.push('"' + valorTexto + '"');
         }
         textoCsv.push(ServerLinha.join(";"));
     }
-    let link = document.createElement("a"); link.setAttribute("href", encodeURI("data:text/csv;charset=utf-8,\uFEFF" + textoCsv.join("\n")));
-    link.setAttribute("download", "Relatorio_CTC_Direcao.csv"); document.body.appendChild(link); link.click(); document.body.removeChild(link);
+    let link = document.createElement("a"); 
+    link.setAttribute("href", encodeURI("data:text/csv;charset=utf-8,\uFEFF" + textoCsv.join("\n")));
+    link.setAttribute("download", "Relatorio_CTC_Direcao.csv"); 
+    document.body.appendChild(link); link.click(); document.body.removeChild(link);
 }
 
 function abrirModalCanteiros() { document.getElementById('modalCanteiros').classList.remove('oculto'); carregarCanteirosDinamicos(); }
