@@ -9,14 +9,13 @@
 <body>
 
     <div class="container">
-        <!-- CABEÇALHO DO SISTEMA PRINCIPAL (Sempre visível desde o início) -->
+        <!-- CABEÇALHO DO SISTEMA PRINCIPAL -->
         <header class="header-sistema">
             <div class="logo-titulo-container">
                 <img src="emblema.png" alt="Polícia Penal PR" class="emblema-topo">
                 <h1>Penitenciária PEL2 - Avaliação CTC</h1>
             </div>
             
-            <!-- APENAS ESTA DIV DOS BOTÕES ADMIN COMEÇA OCULTA -->
             <div class="usuario-logado oculto">
                 <span>Setor Ativo: <strong id="nomeSetorAtivo">Nenhum</strong></span>
                 <button onclick="abrirPainelSenha()" style="background: #475569;">⚙ Mudar Senha</button>
@@ -36,7 +35,8 @@
             <button onclick="salvarNovaSenha()">Salvar Senha</button>
             <button onclick="fecharPainelSenha()" style="background: #64748b;">Cancelar</button>
         </div>
-        <!-- TELA DE LOGIN (Aparece primeiro) -->
+
+        <!-- TELA DE LOGIN (Suporte nativo aos 8 setores da PEL2) -->
         <div id="telaLogin" class="container-login">
             <div class="login-box">
                 <h2>Acesso ao Sistema CTC</h2>
@@ -53,7 +53,6 @@
                     <option value="Enfermaria">Enfermaria</option>
                     <option value="Psicologia">Psicologia</option>
                     <option value="Direção">Direção</option>
-		    <option value="Inteligência">Inteligência</option>
                 </select>
                 
                 <label for="senhaLogin">Senha de Acesso:</label>
@@ -66,8 +65,7 @@
                 </div>
             </div>
         </div>
-
-        <!-- SISTEMA PRINCIPAL (Libera após o login com validação) -->
+        <!-- SISTEMA PRINCIPAL (Libera após a validação do login) -->
         <div id="sistemaPrincipal" class="oculto">
             
             <!-- BLOCO DE INCLUSÃO (Liberado para todos os setores) -->
@@ -99,21 +97,21 @@
                     <button type="button" id="btnGerenciarPopup" onclick="abrirModalCanteiros()" style="background: #475569;">⚙ Gerenciar Canteiros</button>
                 </form>
             </div>
-            <!-- SEÇÃO DE DADOS E RELATÓRIOS -->
+
+            <!-- SEÇÃO DE DADOS, FILTROS E DISPAROS ADMINISTRATIVOS -->
             <div class="bloco">
                 <h2>Presos Cadastrados / Status das Avaliações</h2>
                 
-                <!-- Barra de Ações Rápidas com Filtro Seguro por Select -->
                 <div style="display: flex; gap: 10px; margin-bottom: 15px; flex-wrap: wrap;" class="no-print">
                     <select id="filtroMemorando" onchange="filtrarPorMemorando()" style="flex: 1; margin-bottom: 0; min-width: 250px;">
                         <option value="">🔍 Filtrar por número de memorando... (Exibir Todos)</option>
                     </select>
                     <button onclick="carregarDados()" style="background: #475569; margin-top:0;">Atualizar Lista</button>
                     <button id="btnExportar" onclick="exportarExcel()" style="background: #0284c7; margin-top:0;" class="oculto">Exportar para Excel</button>
-                    <button id="btnImprimir" onclick="window.print()" class="btn-print oculto" style="margin-top:0;">Imprimir Relatório</button>
+                    <button id="btnImprimir" onclick="prepararEImprimirAtaCTC()" class="btn-print oculto" style="margin-top:0;">Imprimir Relatório</button>
                 </div>
 
-                <!-- BARRA DE CONTROLE DE FLUXO E PAGINAÇÃO -->
+                <!-- CONTROLE DE FLUXO DE PENDÊNCIAS E NAVEGAÇÃO -->
                 <div class="barra-paginacao no-print">
                     <div class="grupo-filtro-status">
                         <label for="chkPendentes" class="switch-label">
@@ -127,16 +125,15 @@
                         <button id="btnPagProxima" onclick="mudarPagina(1)" disabled>Próxima ▶</button>
                     </div>
                 </div>
-
-                <!-- TABELA MASTER DE EXIBIÇÃO -->
-                <div style="overflow-x: auto;">
+                <!-- TABELA MASTER DINÂMICA (Puxa as avaliações em tempo real) -->
+                <div style="overflow-x: auto;" class="tabela-responsiva-container">
                     <table id="tabelaMaster">
                         <thead id="cabecalhoTabela">
                             <!-- Inserido dinamicamente via JavaScript -->
                         </thead>
                         <tbody id="corpoTabela">
                             <tr>
-                                <td colspan="5">Aguardando login para carregar os dados confidenciais...</td>
+                                <td colspan="5">Buscando dados confidenciais na nuvem da unidade...</td>
                             </tr>
                         </tbody>
                     </table>
@@ -146,7 +143,7 @@
         </div> <!-- Fim do sistemaPrincipal -->
     </div> <!-- Fim do container -->
 
-    <!-- JANELA FLUTUANTE (MODAL POPUP) DE CANTEIROS -->
+    <!-- JANELA FLUTUANTE (MODAL POPUP) DE GERENCIAMENTO DE CANTEIROS -->
     <div id="modalCanteiros" class="modal-overlay oculto">
         <div class="modal-box">
             <div class="modal-header">
@@ -169,14 +166,79 @@
                         </tr>
                     </thead>
                     <tbody id="corpoTabelaCanteiros">
-                        <!-- Carregado via JS -->
+                        <!-- Carregado via JavaScript -->
                     </tbody>
                 </table>
             </div>
         </div>
     </div>
+    <!-- SEÇÃO EXCLUSIVA DE IMPRESSÃO DA ATA CTC (ATIDADO ENQUANTO IMPRIME) -->
+    <div id="areaAtaImpressao" class="folha-ata-deppen">
+        
+        <div class="timbre-topo-oficial">
+            <!-- ALINHAMENTO DINÂMICO NAS EXTREMIDADES (LOCAIS DO X) -->
+            <img src="emblema.png" alt="Polícia Penal PR" class="emblema-ata-uf">
+            <img src="emblema2.png" alt="Unidade de Progressão" class="emblema-ata-uf">
+            
+            SECRETARIA DE ESTADO DA SEGURANÇA PÚBLICA<br>
+            E ADMINISTRAÇÃO PENITENCIÁRIA<br>
+            DEPARTAMENTO DE POLÍCIA PENAL - DEPPEN<br>
+            PENITENCIÁRIA ESTADUAL DE LONDRINA II - UNIDADE DE PROGRESSÃO<br>
+            DIVISÃO DE PRONTUÁRIO E MOVIMENTAÇÃO - DIPROM<br>
+            CTC - COMISSÃO TÉCNICA DE CLASSIFICAÇÃO<br>
+            <span style="font-size: 8.5pt; font-weight: normal; text-transform: none; font-family: 'Times New Roman';">
+                Rod. João Alves da Rocha Loures, 5925, Gleba Ribeirão Cambé, CEP 86.109-990 - Londrina - Paraná<br>
+                Fone (43) 3342-4778 - e-mail: pel2@depen.pr.gov.br
+            </span>
+        </div>
 
-    <!-- Sincroniza o arquivo de controle inteligente de rotas -->
+        <div class="titulo-ata-oficial">
+            ATA N. ° <span id="numAtaDinamica">____/2026</span>/COMISSÃO TÉCNICA DE CLASSIFICAÇÃO – CTC
+        </div>
+
+        <!-- SEÇÃO CORRIGIDA CONTÍNUA (SEM PULO DE LINHA) -->
+        <div class="corpo-texto-ata">
+            <p class="recuo-paragrafo-ata">
+                <span id="textoDataGerada">Aos vinte e dois dias do mês de agosto de dois mil e vinte e seis</span>, 
+                foi elaborado pela DIOQ, o Memorando N° <span id="txtNumeroMemoAta">______</span>, com a indicação dos canteiros de trabalho, 
+                vagas disponíveis a serem preenchidos pelos presos desta unidade, que são avaliados individualmente, segundo critérios estipulados em 
+                determinação da Direção da Unidade, pelos membros da Comissão Técnica de Classificação, ou seja, 
+                dos setores de Segurança, Jurídico, Social, Psicologia, Saúde e Direção Geral. No levantamento das informações contidas na comissão web, relata-se que:
+                <!-- O BLOCO DE PRESOS FOI TRAZIDO PARA DENTRO DO PARÁGRAFO PARA NÃO PULAR LINHA -->
+                <span id="blocoVotosPresosImpressao"></span>
+            </p>
+            
+            <p class="fechamento-ata-paragrafo">
+                Concluindo, é lavrada esta ata, que vai assinada pelos membros da comissão técnica avaliadora da PEL2.
+            </p>
+        </div>
+
+
+        <div class="bloco-assinaturas-ata">
+            <div class="item-visto-ata">
+                <div class="linha-visto"></div>
+                <b>Eduardo Borges Alves</b><br>
+                Representante da Divisão de Segurança e Disciplina
+            </div>
+            <div class="item-visto-ata">
+                <div class="linha-visto"></div>
+                <b>Joice Marcimiano Moriguchi</b><br>
+                Representante do Jurídico
+            </div>
+            <div class="item-visto-ata">
+                <div class="linha-visto"></div>
+                <b>Adriana Bueno Pereira Zampar</b><br>
+                Representante do Setor de Saúde
+            </div>
+            <div class="item-visto-ata">
+                <div class="linha-visto"></div>
+                <b>Bruna Castro Galeano Betetto</b><br>
+                Representante do Serviço Social
+            </div>
+        </div>
+    </div>
+
+    <!-- Sincroniza o arquivo principal de controle inteligente de rotas -->
     <script src="script.js"></script>
 </body>
 </html>
