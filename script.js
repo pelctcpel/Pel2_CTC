@@ -40,7 +40,6 @@ function efetuarLogin() {
     const emailSetorAlvo = EMAILS_SETORES[setorSelecionado];
     const urlCompleta = `${SCRIPT_URL}?buscar=obterSenha&setor=${encodeURIComponent(emailSetorAlvo)}`;
 
-    // RESOLVIDO CORS: redirect: 'follow' ativa o desvio eletrônico nativo do Apps Script
     fetch(urlCompleta, {
         method: "GET",
         mode: "cors",
@@ -48,9 +47,10 @@ function efetuarLogin() {
     })
     .then(res => res.json())
     .then(resposta => {
-        const senhaOficialNuvem = resposta.senha || "";
+        const senhaOficialNuvem = (resposta.senha || "").toString().trim();
+        const senhaInseridaLimpa = senhaDigitada.trim();
 
-        if (senhaOficialNuvem !== "" && senhaDigitada.trim() === senhaOficialNuvem.trim()) {
+        if (senhaOficialNuvem !== "" && senhaInseridaLimpa === senhaOficialNuvem) {
             if (painelErro) painelErro.classList.add('oculto');
             document.getElementById('senhaLogin').value = "";
             setorLogadoAtualmente = setorSelecionado;
@@ -67,7 +67,7 @@ function efetuarLogin() {
             
             setTimeout(() => { carregarDados(); }, 200);
         } else {
-            if (painelErro) painelErro.replaceClass ? null : painelErro.classList.remove('oculto');
+            if (painelErro) painelErro.classList.remove('oculto');
         }
     })
     .catch(err => {
@@ -79,7 +79,6 @@ function efetuarLogin() {
         btnEntrar.innerText = "Entrar no Sistema";
     });
 }
-
 function fazerLogout() {
     setorLogadoAtualmente = "";
     paginaAtual = 1; 
@@ -89,6 +88,7 @@ function fazerLogout() {
         document.querySelector('.usuario-logado').classList.add('oculto');
     }
 }
+
 // ==========================================================================
 // 2. MODAL DE ALTERAÇÃO DE SENHA COM ATUALIZAÇÃO DIRETA NA ABA "senhas"
 // ==========================================================================
@@ -99,7 +99,6 @@ function fecharPainelSenha() {
     document.getElementById('novaSenhaInput').value = "";
     document.getElementById('confirmarNovaSenhaInput').value = "";
 }
-
 function salvarNovaSenha() {
     const novaSenha = document.getElementById('novaSenhaInput').value;
     const confirmarSenha = document.getElementById('confirmarNovaSenhaInput').value;
@@ -379,7 +378,7 @@ function prepararEImprimirAtaCTC() {
         let decisaoDirecao = "PENDENTE"; const celulaVotoDirecao = linha.cells[linha.cells.length - 1]; 
         if (celulaVotoDirecao) { const txt = celulaVotoDirecao.innerText.toUpperCase(); if (txt.includes("SIM")) decisaoDirecao = "APROVADO"; else if (txt.includes("NÃO")) decisaoDirecao = "INDEFERIDO"; else if (txt.includes("INTELIGÊNCIA")) decisaoDirecao = "RETIDO PELA INTELIGÊNCIA"; }
 
-        if (decisaoDirecao === "APROVADO") textoMontadoPresos += `Para trabalho no canteiro <b>${c.toUpperCase()}</b>, o preso indicado <b>${n.toUpperCase()}</b>, prontuário nº <b>${p}</b>, em avaliação individual, foi <b>APROVADO por UNANIMIDADE</b> para ser transferido de seu canteiro de trabalho para implante/transferência neste sector. `;
+        if (decisaoDirecao === "APROVADO") textoMontadoPresos += `Para trabalho no canteiro <b>${c.toUpperCase()}</b>, o preso indicado <b>${n.toUpperCase()}</b>, prontuário nº <b>${p}</b>, em avaliação individual, foi <b>APROVADO por UNANIMIDADE</b> para ser transferido de seu canteiro de trabalho para implante/transferência neste setor. `;
         else if (decisaoDirecao === "INDEFERIDO") textoMontadoPresos += `Por outro lado, em análise para trabalho no canteiro <b>${c.toUpperCase()}</b>, com o preso indicado: <b>${n.toUpperCase()}</b>, prontuário nº <b>${p}</b>, com avaliações e pareceres dos setores envolvidos, teve sua solicitação de implante, <b>"INDEFERIDA" pela DIREÇÃO da Unidade</b>. `;
         else if (decisaoDirecao === "RETIDO PELA INTELIGÊNCIA") textoMontadoPresos += `Em análise de segurança de canteiro para trabalho no canteiro <b>${c.toUpperCase()}</b>, o preso indicado <b>${n.toUpperCase()}</b>, prontuário nº <b>${p}</b>, teve seus trâmites suspensos devido à <b>RESTRIÇÃO E INDEFERIDO PELA COMISSÃO</b>. `;
     });
@@ -394,6 +393,7 @@ function prepararEImprimirAtaCTC() {
     if (document.getElementById('numAtaDinamica')) document.getElementById('numAtaDinamica').innerText = numeroMemorandoCapturado;
     setTimeout(function() { window.print(); carregarDados(); }, 600);
 }
+
 function carregarHistoricoDeMemorandos() {
     const selectFiltro = document.getElementById('filtroMemorando'), datalistCadastro = document.getElementById('historicoMemorandos');
     if (!selectFiltro && !datalistCadastro) return;
@@ -427,4 +427,3 @@ function excluirCanteiroServidor(nomeCanteiro, botao) {
     if (!confirm(`Deseja remover "${nomeCanteiro}"?`)) return; botao.disabled = true;
     fetch(SCRIPT_URL, { method: 'POST', mode: 'cors', redirect: 'follow', body: JSON.stringify({ acao: "excluirCanteiro", nome: nomeCanteiro }) }).then(() => { alert('Canteiro removido!'); carregarCanteirosDinamicos(); });
 }
-// FIM DO ARQUIVO SCRIPT.JS
