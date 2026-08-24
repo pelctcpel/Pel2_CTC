@@ -1,9 +1,9 @@
 // ==========================================================================
-// 1. CONFIGURAÇÕES GERAIS, URL DO SERVIDOR E DICIONÁRIO DE E-MAILS
+// 1. CONFIGURAÇÕES INICIAIS, VARIÁVEIS GLOBAIS E DICIONÁRIO DE E-MAILS
 // ==========================================================================
 const SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbxIjQ02GCL7KS3PQkXxQkasaVX8_lgypnZQeZKcdnXfN7kqFWLlsZxrSoYEJvSuCF2YWA/exec'; 
 
-// Dicionário de e-mails oficiais para cruzar os dados com a aba senhas
+// Dicionário corrigido com maiúsculas/minúsculas batendo 100% com a sua aba senhas
 const EMAILS_SETORES = {
     "Dioq": "dioq.pel2@policiapenal.pr.gov.br",
     "Dised": "eduardo.borges@policiapenal.pr.gov.br",
@@ -19,7 +19,6 @@ let setorLogadoAtualmente = "";
 let paginaAtual = 1;
 const limitePorPagina = 20;
 let filtrarApenasPendentes = true;
-
 function efetuarLogin() {
     const setorSelecionado = document.getElementById('setorLogin').value;
     const senhaDigitada = document.getElementById('senhaLogin').value;
@@ -68,7 +67,7 @@ function efetuarLogin() {
             
             setTimeout(() => { carregarDados(); }, 200);
         } else {
-            if (painelErro) painelErro.classList.remove('oculto');
+            if (painelErro) painelErro.replaceClass ? null : painelErro.classList.remove('oculto');
         }
     })
     .catch(err => {
@@ -91,7 +90,7 @@ function fazerLogout() {
     }
 }
 // ==========================================================================
-// 2. MODAL DE ALTERAÇÃO DE SENHA COM REDIRECIONAMENTO DE BANCO DE DADOS
+// 2. MODAL DE ALTERAÇÃO DE SENHA COM ATUALIZAÇÃO DIRETA NA ABA "senhas"
 // ==========================================================================
 
 function abrirPainelSenha() { document.getElementById('blocoAlterarSenha').classList.remove('oculto'); }
@@ -142,7 +141,6 @@ function salvarNovaSenha() {
         btnSalvar.innerText = "Salvar Senha";
     });
 }
-
 function configurarPermissoesDeTela(setor) {
     fecharPainelSenha();
     carregarHistoricoDeMemorandos(); 
@@ -226,7 +224,6 @@ if (document.getElementById('formPreso')) {
         .finally(() => { btnCadastro.disabled = false; btnCadastro.innerText = "Cadastrar Preso"; });
     });
 }
-
 function salvarVoto(idPreso, botaoClicado) {
     if (!botaoClicado) return;
     const linhaTr = botaoClicado.closest('tr');
@@ -284,7 +281,6 @@ function atualizarCanteiroPreso(idPreso, seletorCanteiro) {
         else { alert("Erro ao salvar canteiro."); seletorCanteiro.style.background = "#fee2e2"; }
     }).catch(() => { seletorCanteiro.style.background = "white"; });
 }
-
 function carregarDados() {
     const corpo = document.getElementById('corpoTabela');
     const cabecalho = document.getElementById('cabecalhoTabela');
@@ -370,7 +366,7 @@ function carregarDados() {
 
 function prepararEImprimirAtaCTC() {
     const linhasPresos = document.getElementById('corpoTabela') ? document.getElementById('corpoTabela').querySelectorAll('tr') : [];
-    if (linhasPresos.length === 0 || (linhasPresos.length === 1 && linesPresos.innerText.includes("Sincronizando"))) { alert("Não há dados carregados!"); return; }
+    if (linhasPresos.length === 0 || (linhasPresos.length === 1 && linhasPresos.innerText.includes("Sincronizando"))) { alert("Não há dados carregados!"); return; }
 
     let textoMontadoPresos = ""; let numeroMemorandoCapturado = document.getElementById('filtroMemorando') ? document.getElementById('filtroMemorando').value.trim() : "";
     let encontrouPresoValido = false;
@@ -383,7 +379,7 @@ function prepararEImprimirAtaCTC() {
         let decisaoDirecao = "PENDENTE"; const celulaVotoDirecao = linha.cells[linha.cells.length - 1]; 
         if (celulaVotoDirecao) { const txt = celulaVotoDirecao.innerText.toUpperCase(); if (txt.includes("SIM")) decisaoDirecao = "APROVADO"; else if (txt.includes("NÃO")) decisaoDirecao = "INDEFERIDO"; else if (txt.includes("INTELIGÊNCIA")) decisaoDirecao = "RETIDO PELA INTELIGÊNCIA"; }
 
-        if (decisaoDirecao === "APROVADO") textoMontadoPresos += `Para trabalho no canteiro <b>${c.toUpperCase()}</b>, o preso indicado <b>${n.toUpperCase()}</b>, prontuário nº <b>${p}</b>, em avaliação individual, foi <b>APROVADO por UNANIMIDADE</b> para ser transferido de seu canteiro de trabalho para implante/transferência neste setor. `;
+        if (decisaoDirecao === "APROVADO") textoMontadoPresos += `Para trabalho no canteiro <b>${c.toUpperCase()}</b>, o preso indicado <b>${n.toUpperCase()}</b>, prontuário nº <b>${p}</b>, em avaliação individual, foi <b>APROVADO por UNANIMIDADE</b> para ser transferido de seu canteiro de trabalho para implante/transferência neste sector. `;
         else if (decisaoDirecao === "INDEFERIDO") textoMontadoPresos += `Por outro lado, em análise para trabalho no canteiro <b>${c.toUpperCase()}</b>, com o preso indicado: <b>${n.toUpperCase()}</b>, prontuário nº <b>${p}</b>, com avaliações e pareceres dos setores envolvidos, teve sua solicitação de implante, <b>"INDEFERIDA" pela DIREÇÃO da Unidade</b>. `;
         else if (decisaoDirecao === "RETIDO PELA INTELIGÊNCIA") textoMontadoPresos += `Em análise de segurança de canteiro para trabalho no canteiro <b>${c.toUpperCase()}</b>, o preso indicado <b>${n.toUpperCase()}</b>, prontuário nº <b>${p}</b>, teve seus trâmites suspensos devido à <b>RESTRIÇÃO E INDEFERIDO PELA COMISSÃO</b>. `;
     });
@@ -398,7 +394,6 @@ function prepararEImprimirAtaCTC() {
     if (document.getElementById('numAtaDinamica')) document.getElementById('numAtaDinamica').innerText = numeroMemorandoCapturado;
     setTimeout(function() { window.print(); carregarDados(); }, 600);
 }
-
 function carregarHistoricoDeMemorandos() {
     const selectFiltro = document.getElementById('filtroMemorando'), datalistCadastro = document.getElementById('historicoMemorandos');
     if (!selectFiltro && !datalistCadastro) return;
