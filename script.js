@@ -363,36 +363,68 @@ function carregarDados() {
 // 5. MOTOR INTELIGENTE DE GERAÇÃO TEXTUAL DE ATA PREMIUM (FIM DE REPETIÇÕES)
 // ==========================================================================
 
+// ==========================================================================
+// 5. MOTOR INTELIGENTE DE GERAÇÃO TEXTUAL DE ATA PREMIUM (CORREÇÃO FIREFOX)
+// ==========================================================================
+
 function prepararEImprimirAtaCTC() {
     const linhasPresos = document.getElementById('corpoTabela') ? document.getElementById('corpoTabela').querySelectorAll('tr') : [];
-    if (linhasPresos.length === 0 || (linhasPresos.length === 1 && linhasPresos.innerText.includes("Sincronizando"))) { alert("Não há dados carregados!"); return; }
+    if (linhasPresos.length === 0 || (linhasPresos.length === 1 && linhasPresos.innerText.includes("Sincronizando"))) { 
+        alert("Não há dados carregados na tabela para emitir a ata!"); 
+        return; 
+    }
 
-    let textoMontadoPresos = ""; let numeroMemorandoCapturado = document.getElementById('filtroMemorando') ? document.getElementById('filtroMemorando').value.trim() : "";
+    let textoMontadoPresos = ""; 
+    let numeroMemorandoCapturado = document.getElementById('filtroMemorando') ? document.getElementById('filtroMemorando').value.trim() : "";
     let encontrouPresoValido = false;
 
     linhasPresos.forEach((linha) => {
-        const m = linha.getAttribute('data-memorando'), n = linha.getAttribute('data-nome'), p = linha.getAttribute('data-prontuario'), c = linha.getAttribute('data-canteiro');
-        if (!n || !p || !c) return; encontrouPresoValido = true;
+        // CORREÇÃO UNIVERSAL: Captura os atributos tanto em maiúsculo quanto em minúsculo para aceitar as travas do Firefox
+        const m = linha.getAttribute('data-memorando') || linha.getAttribute('DATA-MEMORANDO');
+        const n = linha.getAttribute('data-nome') || linha.getAttribute('DATA-NOME');
+        const p = linha.getAttribute('data-prontuario') || linha.getAttribute('DATA-PRONTUARIO');
+        const c = linha.getAttribute('data-canteiro') || linha.getAttribute('DATA-CANTEIRO');
+        
+        if (!n || !p || !c) return; 
+        encontrouPresoValido = true;
         if (!numeroMemorandoCapturado || numeroMemorandoCapturado === "") { numeroMemorandoCapturado = m; }
         
-        let decisaoDirecao = "PENDENTE"; const celulaVotoDirecao = linha.cells[linha.cells.length - 1]; 
-        if (celulaVotoDirecao) { const txt = celulaVotoDirecao.innerText.toUpperCase(); if (txt.includes("SIM")) decisaoDirecao = "APROVADO"; else if (txt.includes("NÃO")) decisaoDirecao = "INDEFERIDO"; else if (txt.includes("INTELIGÊNCIA")) decisaoDirecao = "RETIDO PELA INTELIGÊNCIA"; }
+        let decisaoDirecao = "PENDENTE"; 
+        const celulaVotoDirecao = linha.cells[linha.cells.length - 1]; 
+        if (celulaVotoDirecao) { 
+            const txt = celulaVotoDirecao.innerText.toUpperCase(); 
+            if (txt.includes("SIM")) decisaoDirecao = "APROVADO"; 
+            else if (txt.includes("NÃO")) decisaoDirecao = "INDEFERIDO"; 
+            else if (txt.includes("INTELIGÊNCIA")) decisaoDirecao = "RETIDO PELA INTELIGÊNCIA"; 
+        }
 
-        if (decisaoDirecao === "APROVADO") textoMontadoPresos += `Para trabalho no canteiro <b>${c.toUpperCase()}</b>, o preso indicado <b>${n.toUpperCase()}</b>, prontuário nº <b>${p}</b>, em avaliação individual, foi <b>APROVADO por UNANIMIDADE</b> para ser transferido de seu canteiro de trabalho para implante/transferência neste setor. `;
-        else if (decisaoDirecao === "INDEFERIDO") textoMontadoPresos += `Por outro lado, em análise para trabalho no canteiro <b>${c.toUpperCase()}</b>, com o preso indicado: <b>${n.toUpperCase()}</b>, prontuário nº <b>${p}</b>, com avaliações e pareceres dos setores envolvidos, teve sua solicitação de implante, <b>"INDEFERIDA" pela DIREÇÃO da Unidade</b>. `;
-        else if (decisaoDirecao === "RETIDO PELA INTELIGÊNCIA") textoMontadoPresos += `Em análise de segurança de canteiro para trabalho no canteiro <b>${c.toUpperCase()}</b>, o preso indicado <b>${n.toUpperCase()}</b>, prontuário nº <b>${p}</b>, teve seus trâmites suspensos devido à <b>RESTRIÇÃO E INDEFERIDO PELA COMISSÃO</b>. `;
+        if (decisaoDirecao === "APROVADO") {
+            textoMontadoPresos += `Para trabalho no canteiro <b>${c.toUpperCase()}</b>, o preso indicado <b>${n.toUpperCase()}</b>, prontuário nº <b>${p}</b>, em avaliação individual, foi <b>APROVADO por UNANIMIDADE</b> para ser transferido de seu canteiro de trabalho para implante/transferência neste setor. `;
+        } else if (decisaoDirecao === "INDEFERIDO") {
+            textoMontadoPresos += `Por outro lado, em análise para trabalho no canteiro <b>${c.toUpperCase()}</b>, com o preso indicado: <b>${n.toUpperCase()}</b>, prontuário nº <b>${p}</b>, com avaliações e pareceres dos setores envolvidos, teve sua solicitação de implante, <b>"INDEFERIDA" pela DIREÇÃO da Unidade</b>. `;
+        } else if (decisaoDirecao === "RETIDO PELA INTELIGÊNCIA") {
+            textoMontadoPresos += `Em análise de segurança de canteiro para trabalho no canteiro <b>${c.toUpperCase()}</b>, o preso indicado <b>${n.toUpperCase()}</b>, prontuário nº <b>${p}</b>, teve seus trâmites suspensos devido à <b>RESTRIÇÃO E INDEFERIDO PELA COMISSÃO</b>. `;
+        }
     });
 
-    if (!encontrouPresoValido || textoMontadoPresos === "") { alert("Nenhum registro localizado!"); return; }
+    if (!encontrouPresoValido || textoMontadoPresos === "") { 
+        alert("Nenhum registro de preso válido ou avaliado foi localizado para gerar a impressão!"); 
+        return; 
+    }
+    
     const dataHoje = new Date(), mesesExtenso = ["janeiro", "fevereiro", "março", "abril", "maio", "junho", "julho", "agosto", "setembro", "outubro", "novembro", "dezembro"];
     const textDataOficial = `Aos ${dataHoje.getDate()} dias do mês de ${mesesExtenso[dataHoje.getMonth()]} de ${dataHoje.getFullYear()}`;
+    
     const textoIntroducaoLimpo = `${textDataOficial}, foi elaborado pela DIOQ, o Memorando N°<b>${numeroMemorandoCapturado}</b>, com a indicação dos canteiros de trabalho, vagas disponíveis a serem preenchidos pelos presos desta unidade, que são avaliados individualmente, segundo critérios estipulados em determinação da Direção da Unidade em 01 de julho de 2022, pelos membros da Comissão Técnica de Classificação, ou seja, dos setores de Segurança, Jurídico, Social, Psicologia, Saúde, Pedagogia, Enfermaria, DIOQE e Direção Geral. No levantamento das informações contidas na comissão web, relata-se que:`;
 
     const elContainerTexto = document.getElementById('textoDataGerada').parentElement;
-    if (elContainerTexto) { elContainerTexto.innerHTML = `<p class="recuo-paragrafo-ata">${textoIntroducaoLimpo}</p><p class="recuo-paragrafo-ata" style="margin-top: 15px !important;" id="blocoVotosPresosImpressao">${textoMontadoPresos}</p><p class="fechamento-ata-paragrafo">Concluindo, é lavrada esta ata, que vai assinada pelos membros da comissão técnica avaliadora da PEL2.</p>`; }
+    if (elContainerTexto) { 
+        elContainerTexto.innerHTML = `<p class="recuo-paragrafo-ata">${textoIntroducaoLimpo}</p><p class="recuo-paragrafo-ata" style="margin-top: 15px !important;" id="blocoVotosPresosImpressao">${textoMontadoPresos}</p><p class="fechamento-ata-paragrafo">Concluindo, é lavrada esta ata, que vai assinada pelos membros da comissão técnica avaliadora da PEL2.</p>`; 
+    }
     if (document.getElementById('numAtaDinamica')) document.getElementById('numAtaDinamica').innerText = numeroMemorandoCapturado;
     setTimeout(function() { window.print(); carregarDados(); }, 600);
 }
+
 
 function carregarHistoricoDeMemorandos() {
     const selectFiltro = document.getElementById('filtroMemorando'), datalistCadastro = document.getElementById('historicoMemorandos');
