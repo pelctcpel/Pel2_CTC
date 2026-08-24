@@ -3,7 +3,6 @@
 // ==========================================================================
 const SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbxIjQ02GCL7KS3PQkXxQkasaVX8_lgypnZQeZKcdnXfN7kqFWLlsZxrSoYEJvSuCF2YWA/exec'; 
 
-// TODAS AS SENHAS DE FÁBRICA OFICIAIS ATUALIZADAS
 const SENHAS_PADRAO = {
     "Dised": "dised123",
     "Dioq": "dioq123",
@@ -41,12 +40,20 @@ function efetuarLogin() {
         setorLogadoAtualmente = setorSelecionado;
         document.getElementById('nomeSetorAtivo').innerText = setorLogadoAtualmente;
         
+        // Abre o painel imediatamente em tela para evitar lentidão
         document.getElementById('telaLogin').classList.add('oculto');
         document.getElementById('sistemaPrincipal').classList.remove('oculto');
-        document.querySelector('.usuario-logado').classList.remove('oculto');
+        if (document.querySelector('.usuario-logado')) {
+            document.querySelector('.usuario-logado').classList.remove('oculto');
+        }
         
+        // Carrega as requisições em lote de segundo plano
         configurarPermissoesDeTela(setorLogadoAtualmente);
-        carregarDados(); // FORÇA O CARREGAMENTO OFICIAL DO BANCO IMEDIATAMENTE
+        carregarCanteirosDinamicos();
+        
+        setTimeout(() => {
+            carregarDados(); 
+        }, 200);
     } else {
         if (painelErro) painelErro.classList.remove('oculto');
     }
@@ -57,10 +64,12 @@ function fazerLogout() {
     paginaAtual = 1; 
     document.getElementById('sistemaPrincipal').classList.add('oculto');
     document.getElementById('telaLogin').classList.remove('oculto');
-    document.querySelector('.usuario-logado').classList.add('oculto');
+    if (document.querySelector('.usuario-logado')) {
+        document.querySelector('.usuario-logado').classList.add('oculto');
+    }
 }
 // ==========================================================================
-// 2. ALTERAÇÃO DE SENHAS E CADASTRO COM TRAVA DE SEGURANÇA DE PRONTUÁRIO
+// 2. ALTERAÇÃO DE SENHAS E CONFIGURAÇÕES DE VISIBILIDADE DO PAINEL
 // ==========================================================================
 
 function abrirPainelSenha() { document.getElementById('blocoAlterarSenha').classList.remove('oculto'); }
@@ -84,94 +93,94 @@ function configurarPermissoesDeTela(setor) {
     fecharPainelSenha();
     carregarHistoricoDeMemorandos(); 
 
-    document.getElementById('blocoInclusao').classList.remove('oculto');
-    document.getElementById('btnGerenciarPopup').classList.remove('oculto');
-    carregarCanteirosDinamicos(); 
+    if (document.getElementById('blocoInclusao')) document.getElementById('blocoInclusao').classList.remove('oculto');
+    if (document.getElementById('btnGerenciarPopup')) document.getElementById('btnGerenciarPopup').classList.remove('oculto');
 
-    // Normalização rigorosa de texto para exibir botões sem conflito de acentos
     const sLimpo = String(setor).toLowerCase().normalize("NFD").replace(/[\u0300-\u036f]/g, "");
 
     if (sLimpo === "direcao") {
-        document.getElementById('btnExportar').classList.remove('oculto');
-        document.getElementById('btnImprimir').classList.remove('oculto');
+        if (document.getElementById('btnExportar')) document.getElementById('btnExportar').classList.remove('oculto');
+        if (document.getElementById('btnImprimir')) document.getElementById('btnImprimir').classList.remove('oculto');
     } else {
-        document.getElementById('btnExportar').classList.add('oculto');
-        document.getElementById('btnImprimir').classList.add('oculto');
+        if (document.getElementById('btnExportar')) document.getElementById('btnExportar').classList.add('oculto');
+        if (document.getElementById('btnImprimir')) document.getElementById('btnImprimir').classList.add('oculto');
     }
     const chk = document.getElementById('chkPendentes');
     if (chk) chk.checked = filtrarApenasPendentes;
     paginaAtual = 1; 
 }
+// Trava automática de reentrada por prontuário ativo nos últimos 180 dias
+if (document.getElementById('formPreso')) {
+    document.getElementById('formPreso').addEventListener('submit', function(e) {
+        e.preventDefault();
+        const btnCadastro = e.target.querySelector('button[type="submit"]');
+        const prontuarioDigitado = String(document.getElementById('prontuario').value).trim().toLowerCase();
 
-// TRAVA AUTOMÁTICA NO FORMULÁRIO: Impede o preso de entrar se avaliado nos últimos 6 meses pelo prontuário
-document.getElementById('formPreso').addEventListener('submit', function(e) {
-    e.preventDefault();
-    const btnCadastro = e.target.querySelector('button[type="submit"]');
-    const prontuarioDigitado = String(document.getElementById('prontuario').value).trim().toLowerCase();
+        btnCadastro.disabled = true; 
+        btnCadastro.innerText = "Verificando histórico por prontuário...";
 
-    btnCadastro.disabled = true; 
-    btnCadastro.innerText = "Verificando histórico por prontuário...";
+        const urlVerificar = `${SCRIPT_URL}?setor=Direcao&pendentes=false&pagina=1&limite=100000`;
 
-    const urlVerificar = `${SCRIPT_URL}?setor=Direcao&pendentes=false&pagina=1&limite=100000`;
-
-    fetch(urlVerificar)
-    .then(res => res.json())
-    .then(resposta => {
-        const registros = reply = resposta.dados || [];
-        
-        const historicoRecente = registros.find(preso => {
-            const prontuarioBanco = String(preso.prontuario || "").trim().toLowerCase();
-            if (prontuarioBanco === prontuarioDigitado) {
-                const votoDirecao = preso.avaliacoes.find(a => String(a.setor).toLowerCase().normalize("NFD").replace(/[\u0300-\u036f]/g, "") === "direcao");
-                if (votoDirecao && votoDirecao.dataVoto) {
-                    const dataDoVoto = new Date(votoDirecao.dataVoto);
-                    const dataLimite = new Date(dataDoVoto);
-                    dataLimite.setMonth(dataLimite.getMonth() + 6);
-                    return new Date() < dataLimite;
+        fetch(urlVerificar)
+        .then(res => res.json())
+        .then(resposta => {
+            const registros = resposta.dados || [];
+            
+            const historicoRecente = registros.find(preso => {
+                const prontuarioBanco = String(preso.prontuario || "").trim().toLowerCase();
+                if (prontuarioBanco === prontuarioDigitado) {
+                    const votoDirecao = preso.avaliacoes.find(a => String(a.setor).toLowerCase().normalize("NFD").replace(/[\u0300-\u036f]/g, "") === "direcao");
+                    if (votoDirecao && votoDirecao.dataVoto) {
+                        const dataDoVoto = new Date(votoDirecao.dataVoto);
+                        const dataLimite = new Date(dataDoVoto);
+                        dataLimite.setMonth(dataLimite.getMonth() + 6);
+                        return new Date() < dataLimite;
+                    }
                 }
+                return false;
+            });
+
+            if (historicoRecente) {
+                const votoDirecao = historicoRecente.avaliacoes.find(a => String(a.setor).toLowerCase().normalize("NFD").replace(/[\u0300-\u036f]/g, "") === "direcao");
+                const dVoto = new Date(votoDirecao.dataVoto);
+                const dLib = new Date(dVoto); dLib.setMonth(dLib.getMonth() + 6);
+                
+                alert(`🛑 INCLUSÃO BLOQUEADA PELA REGRA DOS 6 MESES!\n\nO interno ${historicoRecente.nome} (Prontuário: ${document.getElementById('prontuario').value}) possui parecer final concluído em ${dVoto.toLocaleDateString('pt-BR')}.\n\nUma nova comissão para este prontuário só estará liberada em: ${dLib.toLocaleDateString('pt-BR')}.`);
+                
+                btnCadastro.disabled = false; 
+                btnCadastro.innerText = "Cadastrar Preso";
+                return; 
             }
-            return false;
-        });
 
-        if (historicoRecente) {
-            const votoDirecao = historicoRecente.avaliacoes.find(a => String(a.setor).toLowerCase().normalize("NFD").replace(/[\u0300-\u036f]/g, "") === "direcao");
-            const dVoto = new Date(votoDirecao.dataVoto);
-            const dLib = new Date(dVoto); dLib.setMonth(dLib.getMonth() + 6);
-            
-            alert(`🛑 INCLUSÃO BLOQUEADA PELA REGRA DOS 6 MESES!\n\nO interno ${historicoRecente.nome} (Prontuário: ${document.getElementById('prontuario').value}) possui parecer final concluído em ${dVoto.toLocaleDateString('pt-BR')}.\n\nUma nova comissão para este prontuário só estará liberada em: ${dLib.toLocaleDateString('pt-BR')}.`);
-            
+            btnCadastro.innerText = "Cadastrando...";
+            const dados = {
+                acao: "incluirPreso", id: Date.now(),
+                memorando: document.getElementById('memo').value,
+                quemIncluiu: setorLogadoAtualmente, 
+                nome: document.getElementById('nomePreso').value,
+                prontuario: document.getElementById('prontuario').value,
+                canteiro: document.getElementById('canteiroTrabalho').value
+            };
+
+            return fetch(SCRIPT_URL, { method: 'POST', body: JSON.stringify(dados) })
+            .then(() => { 
+                alert('Preso incluído com sucesso!'); 
+                document.getElementById('formPreso').reset(); 
+                carregarCanteirosDinamicos();
+                setTimeout(() => { carregarDados(); }, 300);
+                carregarHistoricoDeMemorandos();
+            });
+        })
+        .catch((err) => { 
+            console.error(err);
+            alert('Erro ao validar histórico na nuvem. Atualize a página e tente de novo.'); 
+        })
+        .finally(() => { 
             btnCadastro.disabled = false; 
-            btnCadastro.innerText = "Cadastrar Preso";
-            return; 
-        }
-
-        btnCadastro.innerText = "Cadastrando...";
-        const dados = {
-            acao: "incluirPreso", id: Date.now(),
-            memorando: document.getElementById('memo').value,
-            quemIncluiu: setorLogadoAtualmente, 
-            nome: document.getElementById('nomePreso').value,
-            prontuario: document.getElementById('prontuario').value,
-            canteiro: document.getElementById('canteiroTrabalho').value
-        };
-
-        return fetch(SCRIPT_URL, { method: 'POST', body: JSON.stringify(dados) })
-        .then(() => { 
-            alert('Preso incluído com sucesso!'); 
-            document.getElementById('formPreso').reset(); 
-            carregarDados();
-            carregarHistoricoDeMemorandos();
+            btnCadastro.innerText = "Cadastrar Preso"; 
         });
-    })
-    .catch((err) => { 
-        console.error(err);
-        alert('Erro ao validar histórico na nuvem. Atualize a página e tente de novo.'); 
-    })
-    .finally(() => { 
-        btnCadastro.disabled = false; 
-        btnCadastro.innerText = "Cadastrar Preso"; 
     });
-});
+}
 // ==========================================================================
 // 3. ENVIO DE PARECERES INTEGRADO (JUSTIFICATIVA OBRIGATÓRIA) E NAVEGAÇÃO
 // ==========================================================================
@@ -182,22 +191,20 @@ function salvarVoto(idPreso, botaoClicado) {
     const campoDecisao = linhaTr.querySelector('select');
     const campoObservacao = linhaTr.querySelector('textarea');
 
-    // 1. Validação da seleção do voto
     if (!campoDecisao) { alert("Campo de voto não encontrado."); return; }
     const decisao = campoDecisao.value;
     if (!decisao || decisao.trim() === "") { alert("Selecione uma decisão (SIM ou NÃO) antes de votar!"); return; }
 
-    // 2. TRAVA DE SEGURANÇA CRUCIAL: Torna a justificativa/observação 100% obrigatória
+    // Trava rígida: impede o envio se a caixa de texto estiver em branco
     if (!campoObservacao || campoObservacao.value.trim() === "") {
         alert("🚨 ATENÇÃO: É obrigatório digitar uma justificativa ou observação detalhada para registrar este voto!");
         if (campoObservacao) {
-            campoObservacao.focus(); // Coloca o cursor piscando na caixa de texto
-            campoObservacao.style.borderColor = "#dc2626"; // Alerta visual com borda vermelha
+            campoObservacao.focus(); 
+            campoObservacao.style.borderColor = "#dc2626"; 
         }
-        return; // Bloqueia e impede o envio dos dados para o servidor
+        return; 
     }
 
-    // Se preenchido corretamente, limpa a borda vermelha de erro e prossegue
     campoObservacao.style.borderColor = "#cbd5e1";
     botaoClicado.disabled = true; 
     botaoClicado.innerText = "Enviando...";
@@ -232,15 +239,44 @@ function atualizarControlesPagina(totalRegistros) {
     btnProximo.disabled = (paginaAtual === totalPaginas);
 }
 // ==========================================================================
-// 4. TABELA MASTER EXPANDIDA - AUDITORIA, 8 SETORES E GESTÃO DAS TRAVAS
+// 4. TABELA MASTER EXPANDIDA - FILTRAGEM E EDIÇÃO AUTOMÁTICA DE CANTEIROS
 // ==========================================================================
+
+function atualizarCanteiroPreso(idPreso, seletorCanteiro) {
+    const novoCanteiroValor = seletorCanteiro.value;
+    if (!novoCanteiroValor) return;
+
+    seletorCanteiro.style.background = "#fef08a"; 
+
+    fetch(SCRIPT_URL, {
+        method: 'POST',
+        body: JSON.stringify({
+            acao: "editarCanteiro",
+            idPreso: idPreso,
+            novoCanteiro: novoCanteiroValor
+        })
+    })
+    .then(res => res.json())
+    .then(resposta => {
+        if (resposta.sucesso) {
+            seletorCanteiro.style.background = "#d1fae5"; 
+            setTimeout(() => { seletorCanteiro.style.background = "white"; }, 1500);
+        } else {
+            alert("Erro ao salvar alteração do canteiro.");
+            seletorCanteiro.style.background = "#fee2e2";
+        }
+    })
+    .catch(() => {
+        seletorCanteiro.style.background = "white";
+    });
+}
 
 function carregarDados() {
     const corpo = document.getElementById('corpoTabela');
     const cabecalho = document.getElementById('cabecalhoTabela');
     if (!corpo || !cabecalho) return;
 
-    corpo.innerHTML = '<tr><td colspan="5">Carregando dados confidenciais...</td></tr>';
+    corpo.innerHTML = '<tr><td colspan="5">Sincronizando dados confidenciais...</td></tr>';
 
     const setorLimpoChecagem = String(setorLogadoAtualmente).toLowerCase().normalize("NFD").replace(/[\u0300-\u036f]/g, "");
 
@@ -253,104 +289,129 @@ function carregarDados() {
     const elementoSelect = document.getElementById('filtroMemorando');
     const termoBuscaMemo = elementoSelect ? elementoSelect.value : "";
 
-    const urlConsultar = `${SCRIPT_URL}?setor=${encodeURIComponent(setorLogadoAtualmente)}&pendentes=${filtrarApenasPendentes}&pagina=${paginaAtual}&limite=${limitePorPagina}&buscaMemo=${encodeURIComponent(termoBuscaMemo)}`;
-
-    fetch(urlConsultar).then(res => res.json()).then(respostaServidor => {
-        const presos = respostaServidor.dados || []; 
-        const totalRegistros = respostaServidor.totalRegistros || 0;
-        corpo.innerHTML = '';
+    // GATILHO DINÂMICO INDEPENDENTE: Coleta os canteiros ativos antes de desenhar a grade
+    fetch(`${SCRIPT_URL}?buscar=canteiros`)
+    .then(res => res.json())
+    .then(listaDeCanteirosVindosDaNuvem => {
         
-        if (presos.length === 0) {
-            corpo.innerHTML = `<tr><td colspan="${setorLimpoChecagem === 'direcao' ? 13 : 6}">Nenhum preso aguardando avaliação.</td></tr>`;
-            atualizarControlesPagina(0); return;
-        }
-
-        presos.forEach(preso => {
-            const tr = document.createElement('tr');
-            const canteiroTexto = preso.canteiro || "Não Informado";
-            const autorCadastro = preso.quemIncluiu || "Não Informado";
-            
-            const votoDirecaoAnterior = preso.avaliacoes.find(a => String(a.setor).toLowerCase().normalize("NFD").replace(/[\u0300-\u036f]/g, "") === "direcao");
-            let estaBloqueadoPorTempo = false;
-            let mensagemBloqueioHtml = "";
-
-            const ehInteligencia = votoDirecaoAnterior && votoDirecaoAnterior.decisao === "INTELIGÊNCIA";
-            let carimboInteligenciaHtml = "";
-            
-            if (ehInteligencia) {
-                tr.classList.add('linha-inteligencia');
-                carimboInteligenciaHtml = `<div class="voto-inteligencia">🛑 Restrição: INTELIGÊNCIA</div>`;
+        let opcoesCanteirosHtml = '<option value="" disabled>-- Opções --</option>';
+        listaDeCanteirosVindosDaNuvem.forEach(nomeDoCanteiro => {
+            if(nomeDoCanteiro && String(nomeDoCanteiro).trim() !== "") {
+                opcoesCanteirosHtml += `<option value="${nomeDoCanteiro}">${nomeDoCanteiro}</option>`;
             }
-
-            if (votoDirecaoAnterior && votoDirecaoAnterior.dataVoto) {
-                const dataDoVoto = new Date(votoDirecaoAnterior.dataVoto);
-                const dataLimiteLiberacao = new Date(dataDoVoto);
-                dataLimiteLiberacao.setMonth(dataLimiteLiberacao.getMonth() + 6);
-                const dataHoje = new Date();
-
-                if (dataHoje < dataLimiteLiberacao) {
-                    estaBloqueadoPorTempo = true;
-                    const dLibStr = dataLimiteLiberacao.toLocaleDateString('pt-BR');
-                    mensagemBloqueioHtml = `<div class="alerta-trava-tempo">🔒 Bloqueado (6 Meses)<br><small>Liberado em: ${dLibStr}</small></div>`;
-                }
-            }
-            
-            if (setorLimpoChecagem === "direcao") {
-                const formatarCelula = (setorNome) => {
-                    const aval = preso.avaliacoes.find(a => String(a.setor).toLowerCase().normalize("NFD").replace(/[\u0300-\u036f]/g, "") === String(setorNome).toLowerCase().normalize("NFD").replace(/[\u0300-\u036f]/g, ""));
-                    if (!aval) return `<span class="voto-status voto-pendente">Pendente</span>`;
-                    const classeVoto = aval.decisao === "SIM" ? "voto-sim" : "voto-nao";
-                    return `<span class="voto-status ${classeVoto}">${aval.decisao}</span><div class="comentario-container" title="${aval.observacao}">${aval.observacao}</div>`;
-                };
-
-                let celulaVotoDirecao = '';
-                
-                if (votoDirecaoAnterior) {
-                    let htmlVoto = ehInteligencia ? carimboInteligenciaHtml : `<span class="voto-status ${votoDirecaoAnterior.decisao === 'SIM' ? 'voto-sim' : 'voto-nao'}">${votoDirecaoAnterior.decisao}</span>`;
-                    let htmlObs = `<div class="comentario-container">${votoDirecaoAnterior.observacao}</div>`;
-                    
-                    celulaVotoDirecao = htmlVoto + htmlObs;
-                    if (estaBloqueadoPorTempo && !ehInteligencia) {
-                        celulaVotoDirecao += "<div style='margin-top:5px;'></div>" + mensagemBloqueioHtml;
-                    }
-                } else if (estaBloqueadoPorTempo) {
-                    celulaVotoDirecao = mensagemBloqueioHtml;
-                } else {
-                    celulaVotoDirecao = `<select style="width:100%; margin-bottom:5px;"><option value="" selected disabled>-- Selecione --</option><option value="SIM">SIM</option><option value="NÃO">NÃO</option><option value="INTELIGÊNCIA">INTELIGÊNCIA</option></select><textarea placeholder="Decisão final..." style="min-height:50px; font-size:0.8rem;"></textarea><button onclick="salvarVoto(${preso.id}, this)" style="padding:4px 8px; font-size:0.8rem; margin-top:2px; width:100%;">Votar</button>`;
-                }
-
-                tr.innerHTML = `<td>${preso.memorando}</td><td><span class="tag-setor-autor">${autorCadastro}</span></td><td>${preso.nome}</td><td>${preso.prontuario}</td><td><strong>${canteiroTexto}</strong></td><td>${formatarCelula("Dised")}</td><td>${formatarCelula("Dioq")}</td><td>${formatarCelula("Jurídico")}</td><td>${formatarCelula("Social")}</td><td>${formatarCelula("Pedagogia")}</td><td>${formatarCelula("Enfermaria")}</td><td>${formatarCelula("Psicologia")}</td><td>${celulaVotoDirecao}</td>`;
-            } else {
-                let celulaAcao = '';
-                const jaAvaliou = preso.avaliacoes.find(a => String(a.setor).toLowerCase().normalize("NFD").replace(/[\u0300-\u036f]/g, "") === String(setorLogadoAtualmente).toLowerCase().normalize("NFD").replace(/[\u0300-\u036f]/g, ""));
-
-                if (ehInteligencia) {
-                    celulaAcao = carimboInteligenciaHtml;
-                } else if (estaBloqueadoPorTempo) {
-                    celulaAcao = mensagemBloqueioHtml;
-                } else if(jaAvaliou) {
-                    const classeVoto = jaAvaliou.decisao === "SIM" ? "voto-sim" : "voto-nao";
-                    celulaAcao = `<span class="voto-status ${classeVoto}">Realizada: ${jaAvaliou.decisao}</span><div class="comentario-container" style="max-width: 100%;" title="${jaAvaliou.observacao}">${jaAvaliou.observacao}</div>`;
-                } else {
-                    celulaAcao = `<select style="width:100%; margin-bottom:5px;"><option value="" selected disabled>-- Selecione --</option><option value="SIM">SIM (Favorável)</option><option value="NÃO">NÃO (Desfavorável)</option></select><textarea placeholder="Justificativa detalhada..."></textarea><button onclick="salvarVoto(${preso.id}, this)">Enviar Voto</button>`;
-                }
-
-                tr.innerHTML = `<td>${preso.memorando}</td><td><span class="tag-setor-autor">${autorCadastro}</span></td><td>${preso.nome}</td><td>${preso.prontuario}</td><td><strong>${canteiroTexto}</strong></td><td>${celulaAcao}</td>`;
-            }
-            corpo.appendChild(tr);
         });
-        atualizarControlesPagina(totalRegistros);
-    }).catch((err) => { console.error(err); if (corpo) corpo.innerHTML = '<tr><td colspan="5" style="color:red;">Erro ao buscar dados do servidor. Clique em Atualizar Lista.</td></tr>'; });
+
+        const urlConsultar = `${SCRIPT_URL}?setor=${encodeURIComponent(setorLogadoAtualmente)}&pendentes=${filtrarApenasPendentes}&pagina=${paginaAtual}&limite=${limitePorPagina}&buscaMemo=${encodeURIComponent(termoBuscaMemo)}`;
+
+        return fetch(urlConsultar)
+        .then(res => res.json())
+        .then(respostaServidor => {
+            const presos = respostaServidor.dados || []; 
+            const totalRegistros = respostaServidor.totalRegistros || 0;
+            corpo.innerHTML = '';
+            
+            if (presos.length === 0) {
+                corpo.innerHTML = `<tr><td colspan="${setorLimpoChecagem === 'direcao' ? 13 : 6}">Nenhum preso aguardando avaliação.</td></tr>`;
+                atualizarControlesPagina(0); return;
+            }
+
+            presos.forEach(preso => {
+                const tr = document.createElement('tr');
+                const canteiroTexto = preso.canteiro || "Não Informado";
+                const autorCadastro = preso.quemIncluiu || "Não Informado";
+                
+                const votoDirecaoAnterior = preso.avaliacoes.find(a => String(a.setor).toLowerCase().normalize("NFD").replace(/[\u0300-\u036f]/g, "") === "direcao");
+                let estaBloqueadoPorTempo = false;
+                let mensagemBloqueioHtml = "";
+
+                const ehInteligencia = votoDirecaoAnterior && votoDirecaoAnterior.decisao === "INTELIGÊNCIA";
+                let carimboInteligenciaHtml = "";
+                
+                if (ehInteligencia) {
+                    tr.classList.add('linha-inteligencia');
+                    carimboInteligenciaHtml = `<div class="voto-inteligencia">🛑 Restrição: INTELIGÊNCIA</div>`;
+                }
+
+                if (votoDirecaoAnterior && votoDirecaoAnterior.dataVoto) {
+                    const dataDoVoto = new Date(votoDirecaoAnterior.dataVoto);
+                    const dataLimiteLiberacao = new Date(dataDoVoto);
+                    dataLimiteLiberacao.setMonth(dataLimiteLiberacao.getMonth() + 6);
+                    const dataHoje = new Date();
+
+                    if (dataHoje < dataLimiteLiberacao) {
+                        estaBloqueadoPorTempo = true;
+                        const dLibStr = dataLimiteLiberacao.toLocaleDateString('pt-BR');
+                        mensagemBloqueioHtml = `<div class="alerta-trava-tempo">🔒 Bloqueado (6 Meses)<br><small>Liberado em: ${dLibStr}</small></div>`;
+                    }
+                }
+
+                let celulaCanteiroHtml = `<strong>${canteiroTexto}</strong>`;
+                if (setorLimpoChecagem === "direcao" || setorLimpoChecagem === "dioq") {
+                    celulaCanteiroHtml = `<select onchange="atualizarCanteiroPreso(${preso.id}, this)" style="padding:4px; font-size:0.85rem; margin-bottom:0; font-weight:bold; width:120px;">${opcoesCanteirosHtml}</select>`;
+                    setTimeout(() => {
+                        const seletorInjetado = tr.querySelector(`select[onchange="atualizarCanteiroPreso(${preso.id}, this)"]`);
+                        if (seletorInjetado) seletorInjetado.value = canteiroTexto;
+                    }, 10);
+                }
+                if (setorLimpoChecagem === "direcao") {
+                    const formatarCelula = (setorNome) => {
+                        const aval = preso.avaliacoes.find(a => String(a.setor).toLowerCase().normalize("NFD").replace(/[\u0300-\u036f]/g, "") === String(setorNome).toLowerCase().normalize("NFD").replace(/[\u0300-\u036f]/g, ""));
+                        if (!aval) return `<span class="voto-status voto-pendente">Pendente</span>`;
+                        const classeVoto = aval.decisao === "SIM" ? "voto-sim" : "voto-nao";
+                        return `<span class="voto-status ${classeVoto}">${aval.decisao}</span><div class="comentario-container" title="${aval.observacao}">${aval.observacao}</div>`;
+                    };
+
+                    let celulaVotoDirecao = '';
+                    
+                    if (votoDirecaoAnterior) {
+                        let htmlVoto = ehInteligencia ? carimboInteligenciaHtml : `<span class="voto-status ${votoDirecaoAnterior.decisao === 'SIM' ? 'voto-sim' : 'voto-nao'}">${votoDirecaoAnterior.decisao}</span>`;
+                        let htmlObs = `<div class="comentario-container">${votoDirecaoAnterior.observacao}</div>`;
+                        
+                        celulaVotoDirecao = htmlVoto + htmlObs;
+                        if (estaBloqueadoPorTempo && !ehInteligencia) {
+                            celulaVotoDirecao += "<div style='margin-top:5px;'></div>" + mensagemBloqueioHtml;
+                        }
+                    } else if (estaBloqueadoPorTempo) {
+                        celulaVotoDirecao = mensagemBloqueioHtml;
+                    } else {
+                        celulaVotoDirecao = `<select style="width:100%; margin-bottom:5px;"><option value="" selected disabled>-- Selecione --</option><option value="SIM">SIM</option><option value="NÃO">NÃO</option><option value="INTELIGÊNCIA">INTELIGÊNCIA</option></select><textarea placeholder="Decisão final..." style="min-height:50px; font-size:0.8rem;"></textarea><button onclick="salvarVoto(${preso.id}, this)" style="padding:4px 8px; font-size:0.8rem; margin-top:2px; width:100%;">Votar</button>`;
+                    }
+
+                    tr.innerHTML = `<td>${preso.memorando}</td><td><span class="tag-setor-autor">${autorCadastro}</span></td><td>${preso.nome}</td><td>${preso.prontuario}</td><td>${celulaCanteiroHtml}</td><td>${formatarCelula("Dised")}</td><td>${formatarCelula("Dioq")}</td><td>${formatarCelula("Jurídico")}</td><td>${formatarCelula("Social")}</td><td>${formatarCelula("Pedagogia")}</td><td>${formatarCelula("Enfermaria")}</td><td>${formatarCelula("Psicologia")}</td><td>${celulaVotoDirecao}</td>`;
+                } else {
+                    let celulaAcao = '';
+                    const jaAvaliou = preso.avaliacoes.find(a => String(a.setor).toLowerCase().normalize("NFD").replace(/[\u0300-\u036f]/g, "") === String(setorLogadoAtualmente).toLowerCase().normalize("NFD").replace(/[\u0300-\u036f]/g, ""));
+
+                    if (ehInteligencia) {
+                        celulaAcao = carimboInteligenciaHtml;
+                    } else if (estaBloqueadoPorTempo) {
+                        celulaAcao = mensagemBloqueioHtml;
+                    } else if(jaAvaliou) {
+                        const classeVoto = jaAvaliou.decisao === "SIM" ? "voto-sim" : "voto-nao";
+                        celulaAcao = `<span class="voto-status ${classeVoto}">Realizada: ${jaAvaliou.decisao}</span><div class="comentario-container" style="max-width: 100%;" title="${jaAvaliou.observacao}">${jaAvaliou.observacao}</div>`;
+                    } else {
+                        celulaAcao = `<select style="width:100%; margin-bottom:5px;"><option value="" selected disabled>-- Selecione --</option><option value="SIM">SIM (Favorável)</option><option value="NÃO (Desfavorável)">NÃO</option></select><textarea placeholder="Justificativa detalhada..."></textarea><button onclick="salvarVoto(${preso.id}, this)">Enviar Voto</button>`;
+                    }
+
+                    tr.innerHTML = `<td>${preso.memorando}</td><td><span class="tag-setor-autor">${autorCadastro}</span></td><td>${preso.nome}</td><td>${preso.prontuario}</td><td>${celulaCanteiroHtml}</td><td>${celulaAcao}</td>`;
+                }
+                corpo.appendChild(tr);
+            });
+            atualizarControlesPagina(totalRegistros);
+        });
+    })
+    .catch((err) => { 
+        console.error(err); 
+        if (corpo) corpo.innerHTML = '<tr><td colspan="5" style="color:red;">Erro na varredura assíncrona dos canteiros. Clique em Atualizar Lista.</td></tr>'; 
+    });
 }
 // ==========================================================================
 // 5. NOVA LÓGICA DE AUTOCOMPLETAR, CANTEIROS E EMISSÃO DE ATA AUTOMÁTICA
 // ==========================================================================
 
-// ROBÔ DE REDAÇÃO DE ATAS: Mapeia as colunas por índices físicos fixos da tabela de 13 colunas da Direção
 function prepararEImprimirAtaCTC() {
-    const cuerpoTabela = document.getElementById('corpoTabela');
-    const linhasPresos = cuerpoTabela ? cuerpoTabela.querySelectorAll('tr') : [];
-    
+    const corpoTabela = document.getElementById('corpoTabela');
+    const linhasPresos = corpoTabela ? corpoTabela.querySelectorAll('tr') : [];
     const filtroSeletor = document.getElementById('filtroMemorando');
     let numeroCTCOficial = filtroSeletor ? filtroSeletor.value.trim() : "";
     
@@ -364,18 +425,29 @@ function prepararEImprimirAtaCTC() {
 
     linhasPresos.forEach((linha) => {
         const celulas = linha.cells;
-        if (celulas.length < 5) return;
+        // Valida se a linha possui colunas suficientes (a tabela da Direção possui 13 colunas)
+        if (!celulas || celulas.length < 5) return;
 
+        // SELEÇÃO CORRETA POR ÍNDICES FÍSICOS DAS COLUNAS (Índice inicial 0)
         if (!numeroCTCOficial) {
-            numeroMemorandoCapturado = celulas[0].innerText.trim(); // Coluna 1: Memorando
+            numeroMemorandoCapturado = celulas[0].innerText.trim(); // Coluna 1 (Índice 0): Nº Memorando
         }
         
-        const nomePreso = celulas[2].innerText.trim().toUpperCase();       // Coluna 3: Nome do Detento
-        const prontuarioPreso = celulas[3].innerText.trim();              // Coluna 4: Prontuário
-        const canteiroProposto = celulas[4].innerText.trim().toUpperCase(); // Coluna 5: Canteiro Proposto
+        const nomePreso = celulas[2].innerText.trim().toUpperCase();       // Coluna 3 (Índice 2): Nome do Detento
+        const prontuarioPreso = celulas[3].innerText.trim();              // Coluna 4 (Índice 3): Nº Prontuário
         
+        // Captura o canteiro mesmo que ele esteja em formato select editável (Coluna 5 - Índice 4)
+        let canteiroProposto = "";
+        const elementoSelectCanteiro = celulas[4].querySelector('select');
+        if (elementoSelectCanteiro) {
+            canteiroProposto = elementoSelectCanteiro.value.toUpperCase();
+        } else {
+            canteiroProposto = celulas[4].innerText.trim().toUpperCase();
+        }
+        
+        // Captura o voto final que a Direção aplicou na última coluna (Coluna 13 - Índice 12)
         let decisaoDirecao = "PENDENTE";
-        const celulaVotoDirecao = celulas[12]; 
+        const celulaVotoDirecao = celulas[celulas.length - 1];
         
         if (celulaVotoDirecao) {
             if (celulaVotoDirecao.innerText.includes("SIM")) decisaoDirecao = "APROVADO";
@@ -383,26 +455,28 @@ function prepararEImprimirAtaCTC() {
             else if (celulaVotoDirecao.innerText.includes("INTELIGÊNCIA")) decisaoDirecao = "RETIDO PELA INTELIGÊNCIA";
         }
 
+        // CONVERSÃO EM TEXTO JURÍDICO OFICIAL COM AS MÁSCARAS HOMOLOGADAS
         if (decisaoDirecao === "APROVADO") {
-            textoMontadoPresos += `Para trabalho no canteiro <b>${canteiroProposto}</b>, o preso indicado <b>${nomePreso}</b>, prontuário nº <b>${prontuarioPreso}</b>, em avaliação individual, foi <b>APROVADO por UNANIMIDADE</b> para ser transferido de seu canteiro de trabalho para implante/transferência neste setor. `;
+            textoMontadoPresos += `Para trabalho no canteiro <b>${canteiroProposto}</b>, o preso indicado <b>${nomePreso}</b>, prontuário nº <b>${prontuarioPreso}</b>, em avaliação individual, foi <b>APROVADO por UNANIMIDADE</b> para ser transferido de seu canteiro de trabalho para implante/transferência neste sector. `;
         } else if (decisaoDirecao === "INDEFERIDO") {
-            textoMontadoPresos += `Por outro lado, em análise para trabalho no canteiro <b>${canteiroProposto}</b>, com o preso indicado: <b>${nomePreso}</b>, prontuário nº <b>${prontuarioPreso}</b>, com avaliações e pareceres dos setores envolvidos, teve sua solicitação de implante, <b>"INDEFERIDA" pela DIREÇÃO da Unidade</b>. `;
+            textoMontadoPresos += `Por outro lado, em análise para trabalho no canteiro <b>${canteiroProposto}</b>, com o preso indicado: <b>${nomePreso}</b>, prontuário nº <b>${prontuarioPreso}</b>, com avaliações e pareceres dos setores envolvidos, teve sua solicitação de implante, <b>\"INDEFERIDA\" pela DIREÇÃO da Unidade</b>. `;
         } else if (decisaoDirecao === "RETIDO PELA INTELIGÊNCIA") {
-            textoMontadoPresos += `Em análise de segurança de canteiro para trabalho no canteiro <b>${canteiroProposto}</b>, o preso indicado <b>${nomePreso}</b>, prontuário nº <b>${prontuarioPreso}</b>, teve seus trâmites suspensos devido à <b>RESTRIÇÃO DE INTELIGÊNCIA</b>. `;
+            // Máscara de sigilo: Transforma a restrição interna de inteligência em termo formal discreto
+            textoMontadoPresos += `Por outro lado, em análise para trabalho no canteiro <b>${canteiroProposto}</b>, com o preso indicado: <b>${nomePreso}</b>, prontuário nº <b>${prontuarioPreso}</b>, com avaliações e pareceres dos setores envolvidos, teve sua solicitação de implante, <b>\"INDEFERIDA PELA COMISSÃO\"</b>. `;
         }
     });
 
     const dataHoje = new Date();
     const mesesExtenso = ["janeiro", "fevereiro", "março", "abril", "maio", "junho", "julho", "agosto", "setembro", "outubro", "novembro", "dezembro"];
-    const diaExtenso = dataHoje.getDate();
-    const anoExtenso = dataHoje.getFullYear();
-    const textDataOficial = `Aos ${diaExtenso} dias do mês de ${mesesExtenso[dataHoje.getMonth()]} de ${anoExtenso}`;
+    const textDataOficial = `Aos ${dataHoje.getDate()} dias do mês de ${mesesExtenso[dataHoje.getMonth()]} de ${dataHoje.getFullYear()}`;
 
+    // Alimenta o esqueleto oculto da Ata do index.html antes do disparo
     document.getElementById('textoDataGerada').innerText = textDataOficial;
     document.getElementById('txtNumeroMemoAta').innerText = numeroMemorandoCapturado;
     document.getElementById('blocoVotosPresosImpressao').innerHTML = textoMontadoPresos;
     document.getElementById('numAtaDinamica').innerText = `${numeroMemorandoCapturado}`;
 
+    // Abre a janela de visualização de impressão nativa do sistema operacional
     window.print();
 }
 
