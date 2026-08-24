@@ -43,7 +43,7 @@ label {
     color: #334155;
 }
 /* ==========================================================================
-   2. INPUTS, FORMULÁRIOS E ESTILIZAÇÃO DE BOTÕES OFICIAIS
+   2. INPUTS, FORMULÁRIOS, ESTILIZAÇÃO DE BOTÕES E BOX DE LOGIN
    ========================================================================== */
 input, select, textarea { 
     width: 100%; 
@@ -87,9 +87,7 @@ button:hover { background: #172554; }
 .btn-print:hover { background: #047857; }
 .btn-sair { background: #dc2626; margin-top: 0; padding: 6px 12px; font-size: 0.9rem; }
 .btn-sair:hover { background: #b91c1c; }
-/* ==========================================================================
-   3. BOX DE LOGINS, DIRETRIZES DA TABELA MASTER E COMENTÁRIOS
-   ========================================================================== */
+
 .container-login { display: flex; justify-content: center; align-items: center; min-height: 80vh; }
 .login-box { background: white; padding: 35px; border-radius: 8px; box-shadow: 0 10px 25px rgba(0,0,0,0.1); max-width: 400px; width: 100%; text-align: left; border-top: 5px solid #1e3a8a; }
 .login-box p { font-size: 0.9rem; color: #64748b; margin-bottom: 20px; line-height: 1.4; }
@@ -101,20 +99,20 @@ button:hover { background: #172554; }
 .logo-titulo-container h1 { margin-bottom: 0; font-size: 1.7rem; color: #0f172a; }
 .usuario-logado { display: flex; align-items: center; gap: 15px; }
 .usuario-logado span { font-size: 0.95rem; background: #e2e8f0; padding: 6px 12px; border-radius: 4px; color: #334155; }
-
+/* ==========================================================================
+   3. DIRETRIZES DA TABELA MASTER, MODAL POPUP E RESPONSIVIDADE
+   ========================================================================== */
 table { width: 100%; border-collapse: collapse; margin-top: 15px; }
 th, td { border: 1px solid #e2e8f0; padding: 10px; text-align: left; }
 th { background: #cbd5e1; color: #1e293b; font-weight: bold; }
-#tabelaMaster td { white-space: normal; word-break: keep-all; word-wrap: break-word; vertical-align: top; }
+#tabelaMaster td { white-space: normal; word-break: keep-all; word-wrap: break-word; vertical-align: top; position: relative !important; }
 
 .voto-status { display: inline-block; padding: 2px 6px; border-radius: 4px; font-weight: bold; margin-bottom: 4px; white-space: nowrap; }
 .voto-sim { background: #d1fae5; color: #065f46; }
 .voto-nao { background: #fee2e2; color: #991b1b; }
 .voto-pendente { background: #f1f5f9; color: #475569; }
 .comentario-container { width: 100% !important; max-width: 180px !important; font-size: 0.85rem; line-height: 1.3; word-wrap: break-word; padding: 4px; background: #f8fafc; border-radius: 4px; display: block; }
-/* ==========================================================================
-   4. MODAL POPUP DE CANTEIROS, CONTROLE DE PÁGINAS E TRAVAS AUDITÁVEIS
-   ========================================================================== */
+
 .modal-overlay { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(15, 23, 42, 0.6); backdrop-filter: blur(4px); display: flex; justify-content: center; align-items: center; z-index: 9999; }
 .modal-box { background: white; width: 100%; max-width: 600px; border-radius: 8px; padding: 25px; box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.15); }
 .modal-header { display: flex; justify-content: space-between; align-items: center; border-bottom: 2px solid #f1f5f9; padding-bottom: 12px; margin-bottom: 15px; }
@@ -133,7 +131,9 @@ th { background: #cbd5e1; color: #1e293b; font-weight: bold; }
 .alerta-trava-tempo { background: #fef2f2 !important; border: 1px solid #fee2e2 !important; color: #991b1b !important; padding: 6px 8px; border-radius: 6px; font-size: 0.75rem; line-height: 1.3; text-align: center; font-weight: 600; display: block; max-width: 180px; margin: 4px auto; }
 .tag-setor-autor { background: #f1f5f9; color: #475569; padding: 3px 8px; border-radius: 4px; font-size: 0.75rem; font-weight: 600; border: 1px solid #e2e8f0; }
 
+/* LINHA DE INTELIGÊNCIA LIMPA: Altera apenas o fundo para rosa suave e congela cliques, sem balão em cima */
 .linha-inteligencia { background-color: #fff5f5 !important; }
+.linha-inteligencia select, .linha-inteligencia textarea, .linha-inteligencia button { opacity: 0.15 !important; pointer-events: none !important; }
 .voto-inteligencia { background-color: #7f1d1d !important; color: #fef2f2 !important; border-radius: 4px; padding: 3px 6px; font-weight: bold; font-size: 0.8rem; }
 
 #areaAtaImpressao { display: none !important; }
@@ -145,7 +145,7 @@ th { background: #cbd5e1; color: #1e293b; font-weight: bold; }
     #formPreso div > div { width: 100% !important; }
 }
 /* ==========================================================================
-   5. REGRAS EXCLUSIVAS DE IMPRESSÃO (A4 VERTICAL - SITE 100% OCULTO)
+   4. REGRAS EXCLUSIVAS DE IMPRESSÃO JUSTIFICADA (A4 VERTICAL)
    ========================================================================== */
 @media print {
     @page {
@@ -153,7 +153,7 @@ th { background: #cbd5e1; color: #1e293b; font-weight: bold; }
         margin: 20mm 20mm 20mm 20mm !important;
     }
 
-    /* Oculta de forma absoluta e limpa toda a interface web do site */
+    /* Oculta de forma absoluta toda a interface web do site para não vazar linhas */
     .container, .no-print, header.header-sistema, .barra-paginacao, #blocoInclusao, #modalCanteiros, #tabelaMaster {
         display: none !important;
     }
@@ -163,12 +163,12 @@ th { background: #cbd5e1; color: #1e293b; font-weight: bold; }
         padding: 0 !important; 
     }
     
-    /* Ativa e força a exibição do documento de ata timbrado */
+    /* Força e ativa a visualização total do documento de ata timbrado */
     #areaAtaImpressao {
         display: block !important;
         position: absolute !important;
         left: 0 !important;
-        top: -15mm !important;
+        top: -5mm !important;
         width: 100% !important;
         background: white !important;
         font-family: 'Times New Roman', Times, serif !important;
@@ -177,7 +177,7 @@ th { background: #cbd5e1; color: #1e293b; font-weight: bold; }
         color: black !important;
     }
 
-    /* Força os textos internos e imagens a se manterem renderizados no papel */
+    /* Força os textos internos e imagens a se manterem renderizados */
     #areaAtaImpressao * {
         visibility: visible !important;
         display: inline-block;
@@ -195,7 +195,7 @@ th { background: #cbd5e1; color: #1e293b; font-weight: bold; }
         padding: 0 105px !important; 
     }
 
-    /* Coordenadas absolutas das duas logos ampliadas a 95px nas pontas */
+    /* Alinhamento geométrico milimétrico das duas logos ampliadas a 95px nas extremidades */
     .emblema-ata-uf { 
         height: 95px !important; 
         width: auto !important; 
@@ -205,9 +205,10 @@ th { background: #cbd5e1; color: #1e293b; font-weight: bold; }
         display: block !important;
     }
 
-    .emblema-ata-uf:nth-of-type(1) { left: 0 !important; }  /* Brasão DEPPEN */
-    .emblema-ata-uf:nth-of-type(2) { right: 0 !important; } /* Brasão UP */
-        .titulo-ata-oficial { 
+    .emblema-ata-uf:nth-of-type(1) { left: 0 !important; }  /* Brasão DEPPEN na esquerda */
+    .emblema-ata-uf:nth-of-type(2) { right: 0 !important; } /* Logo UP na direita */
+
+    .titulo-ata-oficial { 
         display: block !important;
         text-align: center !important; 
         font-weight: bold !important; 
@@ -216,36 +217,41 @@ th { background: #cbd5e1; color: #1e293b; font-weight: bold; }
         text-decoration: underline !important; 
     }
     
+    /* TEXTO 100% JUSTIFICADO RETO EM AMBAS AS MARGENS (FIM DE RECUOS DE PARÁGRAFO) */
     .corpo-texto-ata { 
         display: block !important;
         text-align: justify !important; 
+        text-justify: inter-word !important; /* Distribuição homogênea dos espaços vazios */
         font-size: 12pt !important; 
+        line-height: 1.5 !important;
     }
     
     .recuo-paragrafo-ata { 
-        text-indent: 20mm !important; 
-        margin: 0 !important; 
-        display: inline !important; 
+        text-indent: 0 !important; 
+        margin: 0 0 15px 0 !important; 
+        display: block !important; 
+        text-align: justify !important;
     }
     
     #blocoVotosPresosImpressao {
-        display: inline !important;
-        text-indent: 0 !important;
-        margin: 0 !important;
-        padding: 0 !important;
+        display: block !important;
+        text-indent: 0 !important; 
+        text-align: justify !important;
+        margin: 0 0 15px 0 !important;
     }
     
     .fechamento-ata-paragrafo {
-        text-indent: 20mm !important;
+        text-indent: 0 !important; 
         margin-top: 15px !important;
         display: block !important; 
+        text-align: justify !important; 
     }
 
-    /* QUADRO PREMIUM DE 10 ASSINATURAS RECALIBRADO COM MAIOR ESPAÇAMENTO VERTICAL */
+    /* QUADRO PREMIUM DE 10 ASSINATURAS RECALIBRADO PARA QUEBRA DINÂMICA DE VERSO */
     .bloco-assinaturas-ata { 
         display: grid !important; 
         grid-template-columns: 1fr 1fr !important; 
-        gap: 60px 40px !important; /* AUMENTADO PARA 60PX: Espaço extra vertical excelente para as canetadas */
+        gap: 50px 40px !important; 
         margin-top: 35mm !important; 
         page-break-inside: avoid !important; 
         break-inside: avoid !important;
@@ -267,4 +273,4 @@ th { background: #cbd5e1; color: #1e293b; font-weight: bold; }
         margin: 0 auto 5px auto !important; 
     }
 }
-/* FIM DEFINTIVO DO ARQUIVO STYLE.CSS */
+/* FIM DEFINITIVO DO ARQUIVO STYLE.CSS */

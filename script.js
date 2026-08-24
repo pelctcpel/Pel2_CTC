@@ -4,14 +4,9 @@
 const SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbxIjQ02GCL7KS3PQkXxQkasaVX8_lgypnZQeZKcdnXfN7kqFWLlsZxrSoYEJvSuCF2YWA/exec'; 
 
 const SENHAS_PADRAO = {
-    "Dised": "dised123",
-    "Dioq": "dioq123",
-    "Jurídico": "juridico123", 
-    "Social": "social123",
-    "Pedagogia": "pedagogia123",
-    "Enfermaria": "enfermaria123",
-    "Psicologia": "psicologia123",
-    "Direção": "direcao123"
+    "Dised": "dised123", "Dioq": "dioq123", "Jurídico": "juridico123", 
+    "Social": "social123", "Pedagogia": "pedagogia123", "Enfermaria": "enfermaria123",
+    "Psicologia": "psicologia123", "Direção": "direcao123", "Inteligência": "inteligencia123"
 };
 
 let setorLogadoAtualmente = "";
@@ -107,7 +102,10 @@ function configurarPermissoesDeTela(setor) {
     if (chk) chk.checked = filtrarApenasPendentes;
     paginaAtual = 1; 
 }
-// Trava automática de reentrada por prontuário ativo nos últimos 180 dias
+// ==========================================================================
+// 3. FORMULÁRIO DE CADASTRO COM TRAVA AUTOMÁTICA DOS 6 MESES POR PRONTUÁRIO
+// ==========================================================================
+
 if (document.getElementById('formPreso')) {
     document.getElementById('formPreso').addEventListener('submit', function(e) {
         e.preventDefault();
@@ -180,7 +178,7 @@ if (document.getElementById('formPreso')) {
     });
 }
 // ==========================================================================
-// 3. ENVIO DE PARECERES INTEGRADO (JUSTIFICATIVA OBRIGATÓRIA) E NAVEGAÇÃO
+// 4. REGISTRO DE PARECERES (JUSTIFICATIVA OBRIGATÓRIA) E NAVEGAÇÃO DE PÁGINAS
 // ==========================================================================
 
 function salvarVoto(idPreso, botaoClicado) {
@@ -236,7 +234,7 @@ function atualizarControlesPagina(totalRegistros) {
     btnProximo.disabled = (paginaAtual === totalPaginas);
 }
 // ==========================================================================
-// 4. TABELA MASTER EXPANDIDA - FILTRAGEM E EDIÇÃO AUTOMÁTICA DE CANTEIROS
+// 5. ATUALIZAÇÃO DINÂMICA E ALTERAÇÃO EM TEMPO REAL DE CANTEIROS DE TRABALHO
 // ==========================================================================
 
 function atualizarCanteiroPreso(idPreso, seletorCanteiro) {
@@ -267,6 +265,9 @@ function atualizarCanteiroPreso(idPreso, seletorCanteiro) {
         seletorCanteiro.style.background = "white";
     });
 }
+// ==========================================================================
+// 6. CARREGAMENTO DOS PROCESSOS E ASSOCIAÇÃO VIA DATA-ATTRIBUTES DE SEGURANÇA
+// ==========================================================================
 
 function carregarDados() {
     const corpo = document.getElementById('corpoTabela');
@@ -274,7 +275,6 @@ function carregarDados() {
     if (!corpo || !cabecalho) return;
 
     corpo.innerHTML = '<tr><td colspan="5">Sincronizando dados confidenciais...</td></tr>';
-
     const setorLimpoChecagem = String(setorLogadoAtualmente).toLowerCase().normalize("NFD").replace(/[\u0300-\u036f]/g, "");
 
     if (setorLimpoChecagem === "direcao") {
@@ -313,6 +313,13 @@ function carregarDados() {
 
             presos.forEach(preso => {
                 const tr = document.createElement('tr');
+                
+                // Mapeia chaves ocultas para leitura direta e imune do robô de impressão
+                tr.setAttribute('data-memorando', preso.memorando || "");
+                tr.setAttribute('data-nome', preso.nome || "");
+                tr.setAttribute('data-prontuario', preso.prontuario || "");
+                tr.setAttribute('data-canteiro', preso.canteiro || "");
+
                 const canteiroTexto = preso.canteiro || "Não Informado";
                 const autorCadastro = preso.quemIncluiu || "Não Informado";
                 
@@ -358,15 +365,11 @@ function carregarDados() {
                     };
 
                     let celulaVotoDirecao = '';
-                    
                     if (votoDirecaoAnterior) {
                         let htmlVoto = ehInteligencia ? carimboInteligenciaHtml : `<span class="voto-status ${votoDirecaoAnterior.decisao === 'SIM' ? 'voto-sim' : 'voto-nao'}">${votoDirecaoAnterior.decisao}</span>`;
                         let htmlObs = `<div class="comentario-container">${votoDirecaoAnterior.observacao}</div>`;
-                        
                         celulaVotoDirecao = htmlVoto + htmlObs;
-                        if (estaBloqueadoPorTempo && !ehInteligencia) {
-                            celulaVotoDirecao += "<div style='margin-top:5px;'></div>" + mensagemBloqueioHtml;
-                        }
+                        if (estaBloqueadoPorTempo && !ehInteligencia) { celulaVotoDirecao += "<div style='margin-top:5px;'></div>" + mensagemBloqueioHtml; }
                     } else if (estaBloqueadoPorTempo) {
                         celulaVotoDirecao = mensagemBloqueioHtml;
                     } else {
@@ -378,15 +381,13 @@ function carregarDados() {
                     let celulaAcao = '';
                     const jaAvaliou = preso.avaliacoes.find(a => String(a.setor).toLowerCase().normalize("NFD").replace(/[\u0300-\u036f]/g, "") === String(setorLogadoAtualmente).toLowerCase().normalize("NFD").replace(/[\u0300-\u036f]/g, ""));
 
-                    if (ehInteligencia) {
-                        celulaAcao = carimboInteligenciaHtml;
-                    } else if (estaBloqueadoPorTempo) {
-                        celulaAcao = mensagemBloqueioHtml;
-                    } else if(jaAvaliou) {
+                    if (ehInteligencia) { celulaAcao = carimboInteligenciaHtml; } 
+                    else if (estaBloqueadoPorTempo) { celulaAcao = mensagemBloqueioHtml; } 
+                    else if(jaAvaliou) {
                         const classeVoto = jaAvaliou.decisao === "SIM" ? "voto-sim" : "voto-nao";
                         celulaAcao = `<span class="voto-status ${classeVoto}">Realizada: ${jaAvaliou.decisao}</span><div class="comentario-container" style="max-width: 100%;" title="${jaAvaliou.observacao}">${jaAvaliou.observacao}</div>`;
                     } else {
-                        celulaAcao = `<select style="width:100%; margin-bottom:5px;"><option value="" selected disabled>-- Selecione --</option><option value="SIM">SIM (Favorável)</option><option value="NÃO (Desfavorável)">NÃO</option></select><textarea placeholder="Justificativa detalhada..."></textarea><button onclick="salvarVoto(${preso.id}, this)">Enviar Voto</button>`;
+                        celulaAcao = `<select style="width:100%; margin-bottom:5px;"><option value="" selected disabled>-- Selecione --</option><option value="SIM">SIM (Favorável)</option><option value="NÃO">NÃO</option></select><textarea placeholder="Justificativa detalhada..."></textarea><button onclick="salvarVoto(${preso.id}, this)">Enviar Voto</button>`;
                     }
 
                     tr.innerHTML = `<td>${preso.memorando}</td><td><span class="tag-setor-autor">${autorCadastro}</span></td><td>${preso.nome}</td><td>${preso.prontuario}</td><td>${celulaCanteiroHtml}</td><td>${celulaAcao}</td>`;
@@ -396,77 +397,89 @@ function carregarDados() {
             atualizarControlesPagina(totalRegistros);
         });
     })
-    .catch((err) => { 
-        console.error(err); 
-        if (corpo) corpo.innerHTML = '<tr><td colspan="5" style="color:red;">Erro na varredura assíncrona dos canteiros. Clique em Atualizar Lista.</td></tr>'; 
-    });
+    .catch((err) => { console.error(err); if (corpo) corpo.innerHTML = '<tr><td colspan="5" style="color:red;">Erro na sincronização das linhas.</td></tr>'; });
 }
 // ==========================================================================
-// 5. NOVA LÓGICA DE AUTOCOMPLETAR, CANTEIROS E EMISSÃO DE ATA AUTOMÁTICA
+// 7. ROBÔ INTEGRADO DE REDAÇÃO DE ATAS COESAS (FIM DA DUPLICIDADE E EMENDAS)
 // ==========================================================================
 
 function prepararEImprimirAtaCTC() {
-    const corpoTabela = document.getElementById('corpoTabela');
-    const linhasPresos = corpoTabela ? corpoTabela.querySelectorAll('tr') : [];
     const filtroSeletor = document.getElementById('filtroMemorando');
     let numeroCTCOficial = filtroSeletor ? filtroSeletor.value.trim() : "";
     
-    if (linhasPresos.length === 0) {
+    const corpoTabela = document.getElementById('corpoTabela');
+    const linhasPresos = corpoTabela ? corpoTabela.querySelectorAll('tr') : [];
+    
+    if (linhasPresos.length === 0 || (linhasPresos.length === 1 && linhasPresos.innerText.includes("Sincronizando"))) {
         alert("Não há dados de presos carregados na tabela da Direção para emitir a ata!");
         return;
     }
 
     let textoMontadoPresos = "";
     let numeroMemorandoCapturado = numeroCTCOficial || "______";
+    let encontrouPresoValido = false;
 
     linhasPresos.forEach((linha) => {
-        const celulas = linha.cells;
-        if (!celulas || celulas.length < 5) return;
+        const m = linha.getAttribute('data-memorando');
+        const n = linha.getAttribute('data-nome');
+        const p = linha.getAttribute('data-prontuario');
+        const c = linha.getAttribute('data-canteiro');
 
-        if (!numeroCTCOficial) {
-            numeroMemorandoCapturado = celulas[0].innerText.trim(); // Puxa do Índice 0 fixo (Coluna Memorando)
-        }
-        
-        const nomePreso = celulas[2].innerText.trim().toUpperCase();       // Índice 2 fixo (Coluna Nome)
-        const prontuarioPreso = celulas[3].innerText.trim();              // Índice 3 fixo (Coluna Prontuário)
-        
-        let canteiroProposto = "";
-        const elementoSelectCanteiro = celulas[4].querySelector('select'); // Índice 4 fixo (Coluna Canteiro)
-        if (elementoSelectCanteiro) {
-            canteiroProposto = elementoSelectCanteiro.value.toUpperCase();
-        } else {
-            canteiroProposto = celulas[4].innerText.trim().toUpperCase();
-        }
+        if (!n || !p || !c) return; 
+        encontrouPresoValido = true;
+
+        if (!numeroCTCOficial || numeroCTCOficial === "") { numeroMemorandoCapturado = m; }
         
         let decisaoDirecao = "PENDENTE";
-        const celulaVotoDirecao = celulas[celulas.length - 1]; // Última coluna da tabela master
+        const celulaVotoDirecao = linha.cells[linha.cells.length - 1]; 
         
         if (celulaVotoDirecao) {
-            if (celulaVotoDirecao.innerText.includes("SIM")) decisaoDirecao = "APROVADO";
-            else if (celulaVotoDirecao.innerText.includes("NÃO")) decisaoDirecao = "INDEFERIDO";
-            else if (celulaVotoDirecao.innerText.includes("INTELIGÊNCIA")) decisaoDirecao = "RETIDO PELA INTELIGÊNCIA";
+            const txt = celulaVotoDirecao.innerText.toUpperCase();
+            if (txt.includes("SIM")) decisaoDirecao = "APROVADO";
+            else if (txt.includes("NÃO")) decisaoDirecao = "INDEFERIDO";
+            else if (txt.includes("INTELIGÊNCIA")) decisaoDirecao = "RETIDO PELA INTELIGÊNCIA";
         }
 
         if (decisaoDirecao === "APROVADO") {
-            textoMontadoPresos += `Para trabalho no canteiro <b>${canteiroProposto}</b>, o preso indicado <b>${nomePreso}</b>, prontuário nº <b>${prontuarioPreso}</b>, em avaliação individual, foi <b>APROVADO por UNANIMIDADE</b> para ser transferido de seu canteiro de trabalho para implante/transferência neste sector. `;
+            textoMontadoPresos += `Para trabalho no canteiro <b>${c.toUpperCase()}</b>, o preso indicado <b>${n.toUpperCase()}</b>, prontuário nº <b>${p}</b>, em avaliação individual, foi <b>APROVADO por UNANIMIDADE</b> para ser transferido de seu canteiro de trabalho para implante/transferência neste setor. `;
         } else if (decisaoDirecao === "INDEFERIDO") {
-            textoMontadoPresos += `Por outro lado, em análise para trabalho no canteiro <b>${canteiroProposto}</b>, com o preso indicado: <b>${nomePreso}</b>, prontuário nº <b>${prontuarioPreso}</b>, com avaliações e pareceres dos setores envolvidos, teve sua solicitação de implante, <b>\"INDEFERIDA\" pela DIREÇÃO da Unidade</b>. `;
-        } else if (decisaoDirecao === "RETIDO PELA INTELIGÊNCIA") {
-            textoMontadoPresos += `Por outro lado, em análise para trabalho no canteiro <b>${canteiroProposto}</b>, com o preso indicado: <b>${nomePreso}</b>, prontuário nº <b>${prontuarioPreso}</b>, com avaliações e pareceres dos setores envolvidos, teve sua solicitação de implante, <b>\"INDEFERIDA PELA COMISSÃO\"</b>. `;
+            textoMontadoPresos += `Por outro lado, em análise para trabalho no canteiro <b>${c.toUpperCase()}</b>, com o preso indicado: <b>${n.toUpperCase()}</b>, prontuário nº <b>${p}</b>, com avaliações e pareceres dos setores envolvidos, teve sua solicitação de implante, <b>"INDEFERIDA" pela DIREÇÃO da Unidade</b>. `;
+        } 
+        // CORREÇÃO INSTITUCIONAL: Substitui o termo interno pelo texto oficial da ata padrão
+        else if (decisaoDirecao === "RETIDO PELA INTELIGÊNCIA") {
+            textoMontadoPresos += `Em análise de segurança de canteiro para trabalho no canteiro <b>${c.toUpperCase()}</b>, o preso indicado <b>${n.toUpperCase()}</b>, prontuário nº <b>${p}</b>, teve seus trâmites suspensos devido à <b>RESTRIÇÃO E INDEFERIDO PELA COMISSÃO</b>. `;
         }
     });
+
+    if (!encontrouPresoValido || textoMontadoPresos === "") {
+        alert("Nenhum registro de preso avaliado foi localizado para preencher a ata!");
+        return;
+    }
 
     const dataHoje = new Date();
     const mesesExtenso = ["janeiro", "fevereiro", "março", "abril", "maio", "junho", "julho", "agosto", "setembro", "outubro", "novembro", "dezembro"];
     const textDataOficial = `Aos ${dataHoje.getDate()} dias do mês de ${mesesExtenso[dataHoje.getMonth()]} de ${dataHoje.getFullYear()}`;
 
-    document.getElementById('textoDataGerada').innerText = textDataOficial;
-    document.getElementById('txtNumeroMemoAta').innerText = numeroMemorandoCapturado;
-    document.getElementById('blocoVotosPresosImpressao').innerHTML = textoMontadoPresos;
-    document.getElementById('numAtaDinamica').innerText = `${numeroMemorandoCapturado}`;
+    const textoIntroducaoLimpo = `${textDataOficial}, foi elaborado pela DIOQ, o Memorando N°<b>${numeroMemorandoCapturado}</b>, com a indicação dos canteiros de trabalho, vagas disponíveis a serem preenchidos pelos presos desta unidade, que são avaliados individualmente, segundo critérios estipulados em determinação da Direção da Unidade em 01 de julho de 2022, pelos membros da Comissão Técnica de Classificação, ou seja, dos setores de Segurança, Jurídico, Social, Psicologia, Saúde, Pedagogia, Enfermaria, DIOQE e Direção Geral. No levantamento das informações contidas na comissão web, relata-se que:`;
 
-    window.print();
+    const elContainerTexto = document.getElementById('textoDataGerada').parentElement;
+    if (elContainerTexto) {
+        elContainerTexto.innerHTML = `
+            <p class="recuo-paragrafo-ata">${textoIntroducaoLimpo}</p>
+            <p class="recuo-paragrafo-ata" style="margin-top: 15px !important;" id="blocoVotosPresosImpressao">${textoMontadoPresos}</p>
+        `;
+    }
+
+    if (document.getElementById('numAtaDinamica')) {
+        document.getElementById('numAtaDinamica').innerText = numeroMemorandoCapturado;
+    }
+
+    setTimeout(function() {
+        window.print();
+        carregarDados();
+    }, 600);
 }
+
 
 function carregarHistoricoDeMemorandos() {
     const selectFiltro = document.getElementById('filtroMemorando');
@@ -488,6 +501,7 @@ function filtrarPorMemorando() { paginaAtual = 1; carregarDados(); }
 
 function exportarExcel() {
     let tabela = document.getElementById("tabelaMaster"); let textoCsv = [];
+    if (!tabela) return;
     for (let i = 0; i < tabela.rows.length; i++) {
         let ServerLinha = [];
         for (let j = 0; j < tabela.rows[i].cells.length; j++) {
@@ -500,8 +514,8 @@ function exportarExcel() {
     link.setAttribute("download", "Relatorio_CTC_Direcao.csv"); document.body.appendChild(link); link.click(); document.body.removeChild(link);
 }
 
-function abrirModalCanteiros() { document.getElementById('modalCanteiros').classList.remove('oculto'); carregarCanteirosDinamicos(); }
-function fecharModalCanteiros() { document.getElementById('modalCanteiros').classList.add('oculto'); }
+function abrirModalCanteiros() { if (document.getElementById('modalCanteiros')) { document.getElementById('modalCanteiros').classList.remove('oculto'); carregarCanteirosDinamicos(); } }
+function fecharModalCanteiros() { if (document.getElementById('modalCanteiros')) document.getElementById('modalCanteiros').classList.add('oculto'); }
 
 function carregarCanteirosDinamicos() {
     const selectCanteiro = document.getElementById('canteiroTrabalho');
@@ -524,9 +538,9 @@ function carregarCanteirosDinamicos() {
 }
 
 function adicionarNovoCanteiroServidor() {
-    const inputNome = document.getElementById('novoCanteiroNome'); const nomeCanteiro = inputNome.value.trim(); if (!nomeCanteiro) return;
+    const inputNome = document.getElementById('novoCanteiroNome'); const nomeCanteiro = inputNome ? inputNome.value.trim() : ""; if (!nomeCanteiro) return;
     fetch(SCRIPT_URL, { method: 'POST', body: JSON.stringify({ acao: "cadastrarCanteiro", nome: nomeCanteiro }) })
-    .then(() => { alert('Canteiro cadastrado!'); inputNome.value = ""; carregarCanteirosDinamicos(); }).catch(err => console.error(err));
+    .then(() => { alert('Canteiro cadastrado!'); if (inputNome) inputNome.value = ""; carregarCanteirosDinamicos(); }).catch(err => console.error(err));
 }
 
 function excluirCanteiroServidor(nomeCanteiro, botao) {
