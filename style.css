@@ -1,5 +1,5 @@
 /* ==========================================================================
-   1. CONFIGURAÇÕES GERAIS E RESETS
+   1. CONFIGURAÇÕES GERAIS E RESETS DO PAINEL WEB
    ========================================================================== */
 * { 
     box-sizing: border-box; 
@@ -43,7 +43,7 @@ label {
     color: #334155;
 }
 /* ==========================================================================
-   2. INPUTS, FORMULÁRIOS E ELEMENTOS DE BOTÕES
+   2. INPUTS, FORMULÁRIOS E ESTILIZAÇÃO DE BOTÕES OFICIAIS
    ========================================================================== */
 input, select, textarea { 
     width: 100%; 
@@ -88,7 +88,7 @@ button:hover { background: #172554; }
 .btn-sair { background: #dc2626; margin-top: 0; padding: 6px 12px; font-size: 0.9rem; }
 .btn-sair:hover { background: #b91c1c; }
 /* ==========================================================================
-   3. ESTILIZAÇÃO DE LOGIN, TABELA MASTER E EXIBIÇÃO DE MODAL POPUP
+   3. BOX DE LOGINS, DIRETRIZES DA TABELA MASTER E COMENTÁRIOS
    ========================================================================== */
 .container-login { display: flex; justify-content: center; align-items: center; min-height: 80vh; }
 .login-box { background: white; padding: 35px; border-radius: 8px; box-shadow: 0 10px 25px rgba(0,0,0,0.1); max-width: 400px; width: 100%; text-align: left; border-top: 5px solid #1e3a8a; }
@@ -112,15 +112,15 @@ th { background: #cbd5e1; color: #1e293b; font-weight: bold; }
 .voto-nao { background: #fee2e2; color: #991b1b; }
 .voto-pendente { background: #f1f5f9; color: #475569; }
 .comentario-container { width: 100% !important; max-width: 180px !important; font-size: 0.85rem; line-height: 1.3; word-wrap: break-word; padding: 4px; background: #f8fafc; border-radius: 4px; display: block; }
-
+/* ==========================================================================
+   4. MODAL POPUP DE CANTEIROS, CONTROLE DE PÁGINAS E TRAVAS AUDITÁVEIS
+   ========================================================================== */
 .modal-overlay { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(15, 23, 42, 0.6); backdrop-filter: blur(4px); display: flex; justify-content: center; align-items: center; z-index: 9999; }
 .modal-box { background: white; width: 100%; max-width: 600px; border-radius: 8px; padding: 25px; box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.15); }
 .modal-header { display: flex; justify-content: space-between; align-items: center; border-bottom: 2px solid #f1f5f9; padding-bottom: 12px; margin-bottom: 15px; }
 .modal-close-btn { background: transparent !important; color: #94a3b8 !important; font-size: 1.8rem; padding: 0 !important; margin-top: 0 !important; }
 .modal-table-container { max-height: 350px; overflow-y: auto; border: 1px solid #e2e8f0; border-radius: 4px; margin-top: 15px; }
-/* ==========================================================================
-   4. INTERATIVIDADE, IMPRESSÃO, PAGINAÇÃO E REGRAS PREMIUM
-   ========================================================================== */
+
 #tabelaMaster th, #tabelaMaster td { padding: 14px 12px; }
 .barra-paginacao { display: flex; justify-content: space-between; align-items: center; background: #f8fafc; padding: 12px 20px; border-radius: 6px; margin: 15px 0; border: 1px solid #e2e8f0; }
 .switch-label { display: flex !important; align-items: center !important; gap: 10px !important; cursor: pointer; font-weight: 600; color: #334155; margin: 0 !important; }
@@ -130,92 +130,45 @@ th { background: #cbd5e1; color: #1e293b; font-weight: bold; }
 .botoes-navegacao button { margin-top: 0; padding: 8px 14px; background: #475569; }
 #indicadorPagina { font-weight: bold; color: #1e293b; }
 
-/* DESIGN PREMIUM E COMPACTO DO AVISO DE 6 MESES */
-.alerta-trava-tempo {
-    background: #fef2f2 !important;
-    border: 1px solid #fee2e2 !important;
-    color: #991b1b !important;
-    padding: 6px 8px;
-    border-radius: 6px;
-    font-size: 0.75rem;
-    line-height: 1.3;
-    text-align: center;
-    font-weight: 600;
-    display: block;
-    max-width: 180px;
-    margin: 4px auto;
-}
-
+.alerta-trava-tempo { background: #fef2f2 !important; border: 1px solid #fee2e2 !important; color: #991b1b !important; padding: 6px 8px; border-radius: 6px; font-size: 0.75rem; line-height: 1.3; text-align: center; font-weight: 600; display: block; max-width: 180px; margin: 4px auto; }
 .tag-setor-autor { background: #f1f5f9; color: #475569; padding: 3px 8px; border-radius: 4px; font-size: 0.75rem; font-weight: 600; border: 1px solid #e2e8f0; }
 
-@media print {
-    #telaLogin, #blocoAlterarSenha, #blocoInclusao, .no-print, .usuario-logado, #tabelaMaster select, #tabelaMaster textarea, #tabelaMaster button { display: none !important; }
-    body { background: white !important; padding: 0 !important; }
-    #tabelaMaster th, #tabelaMaster td { padding: 6px 8px !important; border: 1px solid #000 !important; }
-}
+.linha-inteligencia { background-color: #fff5f5 !important; }
+.voto-inteligencia { background-color: #7f1d1d !important; color: #fef2f2 !important; border-radius: 4px; padding: 3px 6px; font-weight: bold; font-size: 0.8rem; }
 
-/* RESPONSIVIDADE PARA DISPOSITIVOS MÓVEIS (CELULARES) */
+#areaAtaImpressao { display: none !important; }
+
 @media screen and (max-width: 768px) {
     body { padding: 5px !important; overflow-x: hidden !important; }
     .container { width: 100% !important; padding: 10px !important; }
     #formPreso div { flex-direction: column !important; align-items: stretch !important; gap: 10px !important; }
     #formPreso div > div { width: 100% !important; }
 }
-/* REGRAS DA ATA DO DEPPEN (OCULTA POR PADRÃO NA TELA DO SISTEMA) */
-#areaAtaImpressao {
-    display: none;
-}
-
-/* COMPORTAMENTO EXCLUSIVO DURANTE A IMPRESSÃO DA DIRETORIA */
-@media print {
-    /* Esconde todo o layout do sistema web */
-    #telaLogin, #blocoAlterarSenha, #blocoInclusao, .no-print, .usuario-logado, #sistemaPrincipal, .barra-paginacao {
-        display: none !important;
-    }
-    
-    /* Ativa e formata a folha de ata oficial */
-    #areaAtaImpressao {
-        display: block !important;
-        background: white !important;
-        font-family: 'Times New Roman', Times, serif !important;
-        font-size: 12pt !important;
-        line-height: 1.5 !important;
-        color: black !important;
-        padding: 0 !important;
-    }
-    
-    .tag-up-timbre { font-size: 16pt; font-weight: bold; border: 2px solid #000; padding: 4px 10px; float: right; margin-top: 10px; }
-    .timbre-topo-oficial { text-align: center; font-weight: bold; font-size: 11pt; text-transform: uppercase; margin-bottom: 25px; clear: both; }
-    .emblema-ata-uf { height: 70px; width: auto; margin-bottom: 5px; }
-    .titulo-ata-oficial { text-align: center; font-weight: bold; font-size: 12pt; margin-bottom: 20px; text-decoration: underline; }
-    .corpo-texto-ata { text-align: justify; text-justify: inter-word; font-size: 12pt; }
-    .recuo-paragrafo-ata { text-indent: 20mm; margin: 0; }
-    
-    .bloco-assinaturas-ata { display: grid; grid-template-columns: 1fr 1fr; gap: 45px 30px; margin-top: 60px; }
-    .item-visto-ata { text-align: center; font-size: 10pt; line-height: 1.3; }
-    .linha-visto { width: 85%; border-top: 1px solid #000; margin: 0 auto 5px auto; }
-}
 /* ==========================================================================
-   5. REGRAS DE IMPRESSÃO - TIMBRE ENCOSTADO NO TOPO E EMBLEMAS AMPLIADOS
+   5. REGRAS EXCLUSIVAS DE IMPRESSÃO (A4 VERTICAL - SITE 100% OCULTO)
    ========================================================================== */
 @media print {
     @page {
         size: portrait !important;
-        margin: 10mm 20mm 20mm 20mm !important; /* Diminuiu margem superior para subir tudo */
+        margin: 20mm 20mm 20mm 20mm !important;
     }
 
-    body * {
-        visibility: hidden !important;
+    /* Oculta de forma absoluta e limpa toda a interface web do site */
+    .container, .no-print, header.header-sistema, .barra-paginacao, #blocoInclusao, #modalCanteiros, #tabelaMaster {
+        display: none !important;
     }
     
-    #areaAtaImpressao, #areaAtaImpressao * {
-        visibility: visible !important;
+    body { 
+        background: white !important; 
+        padding: 0 !important; 
     }
     
+    /* Ativa e força a exibição do documento de ata timbrado */
     #areaAtaImpressao {
+        display: block !important;
         position: absolute !important;
         left: 0 !important;
-        top: -15mm !important; /* Força o documento a subir e colar no topo da folha */
+        top: -15mm !important;
         width: 100% !important;
         background: white !important;
         font-family: 'Times New Roman', Times, serif !important;
@@ -223,40 +176,39 @@ th { background: #cbd5e1; color: #1e293b; font-weight: bold; }
         line-height: 1.5 !important;
         color: black !important;
     }
-    
-    .tag-up-timbre { 
-        display: none !important; 
+
+    /* Força os textos internos e imagens a se manterem renderizados no papel */
+    #areaAtaImpressao * {
+        visibility: visible !important;
+        display: inline-block;
     }
 
     .timbre-topo-oficial { 
+        display: block !important;
         text-align: center !important; 
         font-weight: bold !important; 
         font-size: 11pt !important; 
         text-transform: uppercase !important; 
         margin-bottom: 25px !important; 
-        margin-top: 10px !important; /* Colou o texto do Deppen no topo */
+        margin-top: 20px !important;
         position: relative !important;
-        padding: 0 105px !important; /* Espaço seguro aumentado para logos maiores */
+        padding: 0 105px !important; 
     }
 
-    /* EMBLEMAS AMPLIADOS E ALINHADOS OPERACIONALMENTE */
+    /* Coordenadas absolutas das duas logos ampliadas a 95px nas pontas */
     .emblema-ata-uf { 
-        height: 95px !important; /* Aumentou o tamanho das logos para destaque */
+        height: 95px !important; 
         width: auto !important; 
         position: absolute !important;
         top: 50% !important;
         transform: translateY(-50%) !important;
+        display: block !important;
     }
 
-    .emblema-ata-uf:nth-of-type(1) {
-        left: 0 !important;
-    }
-
-    .emblema-ata-uf:nth-of-type(2) {
-        right: 0 !important;
-    }
-
-    .titulo-ata-oficial { 
+    .emblema-ata-uf:nth-of-type(1) { left: 0 !important; }  /* Brasão DEPPEN */
+    .emblema-ata-uf:nth-of-type(2) { right: 0 !important; } /* Brasão UP */
+        .titulo-ata-oficial { 
+        display: block !important;
         text-align: center !important; 
         font-weight: bold !important; 
         font-size: 12pt !important; 
@@ -265,6 +217,7 @@ th { background: #cbd5e1; color: #1e293b; font-weight: bold; }
     }
     
     .corpo-texto-ata { 
+        display: block !important;
         text-align: justify !important; 
         font-size: 12pt !important; 
     }
@@ -272,10 +225,9 @@ th { background: #cbd5e1; color: #1e293b; font-weight: bold; }
     .recuo-paragrafo-ata { 
         text-indent: 20mm !important; 
         margin: 0 !important; 
-        display: inline !important; /* Transforma em inline para não quebrar linha */
+        display: inline !important; 
     }
     
-    /* Remove quebras de linha e mantém os presos grudados no texto inicial */
     #blocoVotosPresosImpressao {
         display: inline !important;
         text-indent: 0 !important;
@@ -283,36 +235,36 @@ th { background: #cbd5e1; color: #1e293b; font-weight: bold; }
         padding: 0 !important;
     }
     
-    #blocoVotosPresosImpressao b {
-        font-weight: bold !important;
-    }
-    
     .fechamento-ata-paragrafo {
         text-indent: 20mm !important;
         margin-top: 15px !important;
-        display: block !important; /* Este volta a ser parágrafo normal embaixo */
+        display: block !important; 
     }
 
+    /* QUADRO PREMIUM DE 10 ASSINATURAS RECALIBRADO COM MAIOR ESPAÇAMENTO VERTICAL */
     .bloco-assinaturas-ata { 
         display: grid !important; 
         grid-template-columns: 1fr 1fr !important; 
-        gap: 45px 30px !important; 
-        margin-top: 50px !important; 
+        gap: 60px 40px !important; /* AUMENTADO PARA 60PX: Espaço extra vertical excelente para as canetadas */
+        margin-top: 35mm !important; 
+        page-break-inside: avoid !important; 
+        break-inside: avoid !important;
     }
     
     .item-visto-ata { 
         text-align: center !important; 
         font-size: 10pt !important; 
         line-height: 1.3 !important; 
+        display: block !important;
+        page-break-inside: avoid !important;
+        break-inside: avoid !important;
     }
     
     .linha-visto { 
+        display: block !important;
         width: 85% !important; 
         border-top: 1px solid #000 !important; 
         margin: 0 auto 5px auto !important; 
     }
 }
-
-.linha-inteligencia { background-color: #fff5f5 !important; }
-.linha-inteligencia select, .linha-inteligencia textarea, .linha-inteligencia button { opacity: 0.15 !important; pointer-events: none !important; }
-.voto-inteligencia { background-color: #7f1d1d !important; color: #fef2f2 !important; border-radius: 4px; padding: 3px 6px; font-weight: bold; font-size: 0.8rem; }
+/* FIM DEFINTIVO DO ARQUIVO STYLE.CSS */

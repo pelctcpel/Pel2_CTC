@@ -40,14 +40,12 @@ function efetuarLogin() {
         setorLogadoAtualmente = setorSelecionado;
         document.getElementById('nomeSetorAtivo').innerText = setorLogadoAtualmente;
         
-        // Abre o painel imediatamente em tela para evitar lentidão
         document.getElementById('telaLogin').classList.add('oculto');
         document.getElementById('sistemaPrincipal').classList.remove('oculto');
         if (document.querySelector('.usuario-logado')) {
             document.querySelector('.usuario-logado').classList.remove('oculto');
         }
         
-        // Carrega as requisições em lote de segundo plano
         configurarPermissoesDeTela(setorLogadoAtualmente);
         carregarCanteirosDinamicos();
         
@@ -195,7 +193,6 @@ function salvarVoto(idPreso, botaoClicado) {
     const decisao = campoDecisao.value;
     if (!decisao || decisao.trim() === "") { alert("Selecione uma decisão (SIM ou NÃO) antes de votar!"); return; }
 
-    // Trava rígida: impede o envio se a caixa de texto estiver em branco
     if (!campoObservacao || campoObservacao.value.trim() === "") {
         alert("🚨 ATENÇÃO: É obrigatório digitar uma justificativa ou observação detalhada para registrar este voto!");
         if (campoObservacao) {
@@ -289,7 +286,6 @@ function carregarDados() {
     const elementoSelect = document.getElementById('filtroMemorando');
     const termoBuscaMemo = elementoSelect ? elementoSelect.value : "";
 
-    // GATILHO DINÂMICO INDEPENDENTE: Coleta os canteiros ativos antes de desenhar a grade
     fetch(`${SCRIPT_URL}?buscar=canteiros`)
     .then(res => res.json())
     .then(listaDeCanteirosVindosDaNuvem => {
@@ -425,29 +421,25 @@ function prepararEImprimirAtaCTC() {
 
     linhasPresos.forEach((linha) => {
         const celulas = linha.cells;
-        // Valida se a linha possui colunas suficientes (a tabela da Direção possui 13 colunas)
         if (!celulas || celulas.length < 5) return;
 
-        // SELEÇÃO CORRETA POR ÍNDICES FÍSICOS DAS COLUNAS (Índice inicial 0)
         if (!numeroCTCOficial) {
-            numeroMemorandoCapturado = celulas[0].innerText.trim(); // Coluna 1 (Índice 0): Nº Memorando
+            numeroMemorandoCapturado = celulas[0].innerText.trim(); // Puxa do Índice 0 fixo (Coluna Memorando)
         }
         
-        const nomePreso = celulas[2].innerText.trim().toUpperCase();       // Coluna 3 (Índice 2): Nome do Detento
-        const prontuarioPreso = celulas[3].innerText.trim();              // Coluna 4 (Índice 3): Nº Prontuário
+        const nomePreso = celulas[2].innerText.trim().toUpperCase();       // Índice 2 fixo (Coluna Nome)
+        const prontuarioPreso = celulas[3].innerText.trim();              // Índice 3 fixo (Coluna Prontuário)
         
-        // Captura o canteiro mesmo que ele esteja em formato select editável (Coluna 5 - Índice 4)
         let canteiroProposto = "";
-        const elementoSelectCanteiro = celulas[4].querySelector('select');
+        const elementoSelectCanteiro = celulas[4].querySelector('select'); // Índice 4 fixo (Coluna Canteiro)
         if (elementoSelectCanteiro) {
             canteiroProposto = elementoSelectCanteiro.value.toUpperCase();
         } else {
             canteiroProposto = celulas[4].innerText.trim().toUpperCase();
         }
         
-        // Captura o voto final que a Direção aplicou na última coluna (Coluna 13 - Índice 12)
         let decisaoDirecao = "PENDENTE";
-        const celulaVotoDirecao = celulas[celulas.length - 1];
+        const celulaVotoDirecao = celulas[celulas.length - 1]; // Última coluna da tabela master
         
         if (celulaVotoDirecao) {
             if (celulaVotoDirecao.innerText.includes("SIM")) decisaoDirecao = "APROVADO";
@@ -455,13 +447,11 @@ function prepararEImprimirAtaCTC() {
             else if (celulaVotoDirecao.innerText.includes("INTELIGÊNCIA")) decisaoDirecao = "RETIDO PELA INTELIGÊNCIA";
         }
 
-        // CONVERSÃO EM TEXTO JURÍDICO OFICIAL COM AS MÁSCARAS HOMOLOGADAS
         if (decisaoDirecao === "APROVADO") {
             textoMontadoPresos += `Para trabalho no canteiro <b>${canteiroProposto}</b>, o preso indicado <b>${nomePreso}</b>, prontuário nº <b>${prontuarioPreso}</b>, em avaliação individual, foi <b>APROVADO por UNANIMIDADE</b> para ser transferido de seu canteiro de trabalho para implante/transferência neste sector. `;
         } else if (decisaoDirecao === "INDEFERIDO") {
             textoMontadoPresos += `Por outro lado, em análise para trabalho no canteiro <b>${canteiroProposto}</b>, com o preso indicado: <b>${nomePreso}</b>, prontuário nº <b>${prontuarioPreso}</b>, com avaliações e pareceres dos setores envolvidos, teve sua solicitação de implante, <b>\"INDEFERIDA\" pela DIREÇÃO da Unidade</b>. `;
         } else if (decisaoDirecao === "RETIDO PELA INTELIGÊNCIA") {
-            // Máscara de sigilo: Transforma a restrição interna de inteligência em termo formal discreto
             textoMontadoPresos += `Por outro lado, em análise para trabalho no canteiro <b>${canteiroProposto}</b>, com o preso indicado: <b>${nomePreso}</b>, prontuário nº <b>${prontuarioPreso}</b>, com avaliações e pareceres dos setores envolvidos, teve sua solicitação de implante, <b>\"INDEFERIDA PELA COMISSÃO\"</b>. `;
         }
     });
@@ -470,13 +460,11 @@ function prepararEImprimirAtaCTC() {
     const mesesExtenso = ["janeiro", "fevereiro", "março", "abril", "maio", "junho", "julho", "agosto", "setembro", "outubro", "novembro", "dezembro"];
     const textDataOficial = `Aos ${dataHoje.getDate()} dias do mês de ${mesesExtenso[dataHoje.getMonth()]} de ${dataHoje.getFullYear()}`;
 
-    // Alimenta o esqueleto oculto da Ata do index.html antes do disparo
     document.getElementById('textoDataGerada').innerText = textDataOficial;
     document.getElementById('txtNumeroMemoAta').innerText = numeroMemorandoCapturado;
     document.getElementById('blocoVotosPresosImpressao').innerHTML = textoMontadoPresos;
     document.getElementById('numAtaDinamica').innerText = `${numeroMemorandoCapturado}`;
 
-    // Abre a janela de visualização de impressão nativa do sistema operacional
     window.print();
 }
 
