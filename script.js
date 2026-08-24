@@ -1,7 +1,7 @@
 // ==========================================================================
 // 1. CONFIGURAÇÕES GERAIS, URL DO SERVIDOR E DICIONÁRIO DE E-MAILS
 // ==========================================================================
-const SCRIPT_URL = 'https://google.com'; 
+const SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbxIjQ02GCL7KS3PQkXxQkasaVX8_lgypnZQeZKcdnXfN7kqFWLlsZxrSoYEJvSuCF2YWA/exec'; 
 
 // Mapeamento dos e-mails exatos que estão na aba "senhas" da sua planilha
 const EMAILS_SETORES = {
