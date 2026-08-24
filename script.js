@@ -1,9 +1,9 @@
 // ==========================================================================
-// 1. CONFIGURAÇÕES GERAIS, URL DO SERVIDOR E DICIONÁRIO DE E-MAILS
+// 1. CONFIGURAÇÕES INICIAIS, VARIÁVEIS GLOBAIS E DICIONÁRIO DE E-MAILS
 // ==========================================================================
 const SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbxIjQ02GCL7KS3PQkXxQkasaVX8_lgypnZQeZKcdnXfN7kqFWLlsZxrSoYEJvSuCF2YWA/exec'; 
 
-// Mapeamento dos e-mails exatos que estão na aba "senhas" da sua planilha
+// Dicionário de e-mails oficiais para cruzar os dados com a aba senhas
 const EMAILS_SETORES = {
     "Dioq": "dioq.pel2@policiapenal.pr.gov.br",
     "Dised": "eduardo.borges@policiapenal.pr.gov.br",
@@ -39,8 +39,11 @@ function efetuarLogin() {
 
     const emailSetorAlvo = EMAILS_SETORES[setorSelecionado];
 
-    // Faz a consulta em tempo real no banco de dados baseado no e-mail correspondente
-    fetch(`${SCRIPT_URL}?buscar=obterSenha&setor=${encodeURIComponent(emailSetorAlvo)}`)
+    // Executa a requisição forçando cabeçalhos limpos compatíveis com CORS do servidor
+    fetch(`${SCRIPT_URL}?buscar=obterSenha&setor=${encodeURIComponent(emailSetorAlvo)}`, {
+        method: "GET",
+        mode: "cors"
+    })
     .then(res => res.json())
     .then(resposta => {
         const senhaOficialNuvem = resposta.senha || "";
@@ -108,9 +111,9 @@ function salvarNovaSenha() {
     btnSalvar.disabled = true;
     btnSalvar.innerText = "Gravando na Planilha...";
 
-    // Envia o e-mail correspondente do setor para atualizar na tabela do Drive
     fetch(SCRIPT_URL, {
         method: 'POST',
+        mode: 'cors',
         body: JSON.stringify({
             acao: "alterarSenhaSetor",
             setor: emailDoSetorLogado,
@@ -168,7 +171,7 @@ if (document.getElementById('formPreso')) {
         btnCadastro.disabled = true; 
         btnCadastro.innerText = "Verificando histórico por prontuário...";
 
-        fetch(`${SCRIPT_URL}?setor=Direcao&pendentes=false&pagina=1&limite=100000`)
+        fetch(`${SCRIPT_URL}?setor=Direcao&pendentes=false&pagina=1&limite=100000`, { method: "GET", mode: "cors" })
         .then(res => res.json())
         .then(resposta => {
             const registros = resposta.dados || [];
@@ -205,7 +208,7 @@ if (document.getElementById('formPreso')) {
                 canteiro: document.getElementById('canteiroTrabalho').value
             };
 
-            return fetch(SCRIPT_URL, { method: 'POST', body: JSON.stringify(dados) })
+            return fetch(SCRIPT_URL, { method: 'POST', mode: 'cors', body: JSON.stringify(dados) })
             .then(() => { 
                 alert('Preso incluído com sucesso!'); 
                 document.getElementById('formPreso').reset(); 
@@ -239,6 +242,7 @@ function salvarVoto(idPreso, botaoClicado) {
     
     fetch(SCRIPT_URL, {
         method: 'POST',
+        mode: 'cors',
         body: JSON.stringify({ acao: "salvarAvaliacao", idPreso: idPreso, setor: setorLogadoAtualmente, decisao: decisao, observacao: campoObservacao.value.trim() })
     })
     .then(() => { alert('Avaliação registrada com sucesso!'); carregarDados(); })
@@ -266,7 +270,7 @@ function atualizarCanteiroPreso(idPreso, seletorCanteiro) {
     const novoCanteiroValor = seletorCanteiro.value;
     if (!novoCanteiroValor) return;
     seletorCanteiro.style.background = "#fef08a"; 
-    fetch(SCRIPT_URL, { method: 'POST', body: JSON.stringify({ acao: "editarCanteiro", idPreso: idPreso, novoCanteiro: novoCanteiroValor }) })
+    fetch(SCRIPT_URL, { method: 'POST', mode: 'cors', body: JSON.stringify({ acao: "editarCanteiro", idPreso: idPreso, novoCanteiro: novoCanteiroValor }) })
     .then(res => res.json())
     .then(resposta => {
         if (resposta.sucesso) { seletorCanteiro.style.background = "#d1fae5"; setTimeout(() => { seletorCanteiro.style.background = "white"; }, 1500); }
@@ -287,13 +291,13 @@ function carregarDados() {
 
     const termoBuscaMemo = document.getElementById('filtroMemorando') ? document.getElementById('filtroMemorando').value : "";
 
-    fetch(`${SCRIPT_URL}?buscar=canteiros`)
+    fetch(`${SCRIPT_URL}?buscar=canteiros`, { method: "GET", mode: "cors" })
     .then(res => res.json())
     .then(listaCanteiros => {
         let opcoesCanteirosHtml = '<option value="" disabled>-- Opções --</option>';
         listaCanteiros.forEach(c => { if(c) opcoesCanteirosHtml += `<option value="${c}">${c}</option>`; });
 
-        fetch(`${SCRIPT_URL}?setor=${encodeURIComponent(setorLogadoAtualmente)}&pendentes=${filtrarApenasPendentes}&pagina=${paginaAtual}&limite=${limitePorPagina}&buscaMemo=${encodeURIComponent(termoBuscaMemo)}`)
+        fetch(`${SCRIPT_URL}?setor=${encodeURIComponent(setorLogadoAtualmente)}&pendentes=${filtrarApenasPendentes}&pagina=${paginaAtual}&limite=${limitePorPagina}&buscaMemo=${encodeURIComponent(termoBuscaMemo)}`, { method: "GET", mode: "cors" })
         .then(res => res.json())
         .then(respostaServidor => {
             const presos = respostaServidor.dados || []; 
@@ -375,7 +379,7 @@ function prepararEImprimirAtaCTC() {
         if (!numeroMemorandoCapturado || numeroMemorandoCapturado === "") { numeroMemorandoCapturado = m; }
         
         let decisaoDirecao = "PENDENTE"; 
-        const celulaVotoDirecao = linha.cells[linha.cells.length - 1]; 
+        const celulaVotoDirecao = inlineV = linha.cells[linha.cells.length - 1]; 
         if (celulaVotoDirecao) { 
             const txt = celulaVotoDirecao.innerText.toUpperCase(); 
             if (txt.includes("SIM")) decisaoDirecao = "APROVADO"; 
@@ -396,12 +400,10 @@ function prepararEImprimirAtaCTC() {
     const dataHoje = new Date(), mesesExtenso = ["janeiro", "fevereiro", "março", "abril", "maio", "junho", "julho", "agosto", "setembro", "outubro", "novembro", "dezembro"];
     const textDataOficial = `Aos ${dataHoje.getDate()} dias do mês de ${mesesExtenso[dataHoje.getMonth()]} de ${dataHoje.getFullYear()}`;
     
-    // CORREÇÃO: Junta o número ao caractere "N°" eliminando espaços duplos
     const textoIntroducaoLimpo = `${textDataOficial}, foi elaborado pela DIOQ, o Memorando N°<b>${numeroMemorandoCapturado}</b>, com a indicação dos canteiros de trabalho, vagas disponíveis a serem preenchidos pelos presos desta unidade, que são avaliados individualmente, segundo critérios estipulados em determinação da Direção da Unidade em 01 de julho de 2022, pelos membros da Comissão Técnica de Classificação, ou seja, dos setores de Segurança, Jurídico, Social, Psicologia, Saúde, Pedagogia, Enfermaria, DIOQE e Direção Geral. No levantamento das informações contidas na comissão web, relata-se que:`;
 
     const elContainerTexto = document.getElementById('textoDataGerada').parentElement;
     if (elContainerTexto) { 
-        // Injeta os parágrafos de forma independente forçando as margens retas e justificadas
         elContainerTexto.innerHTML = `<p class="recuo-paragrafo-ata">${textoIntroducaoLimpo}</p><p class="recuo-paragrafo-ata" style="margin-top: 15px !important;" id="blocoVotosPresosImpressao">${textoMontadoPresos}</p><p class="fechamento-ata-paragrafo">Concluindo, é lavrada esta ata, que vai assinada pelos membros da comissão técnica avaliadora da PEL2.</p>`; 
     }
     if (document.getElementById('numAtaDinamica')) document.getElementById('numAtaDinamica').innerText = numeroMemorandoCapturado;
@@ -410,7 +412,7 @@ function prepararEImprimirAtaCTC() {
 function carregarHistoricoDeMemorandos() {
     const selectFiltro = document.getElementById('filtroMemorando'), datalistCadastro = document.getElementById('historicoMemorandos');
     if (!selectFiltro && !datalistCadastro) return;
-    fetch(`${SCRIPT_URL}?buscar=memorandos`).then(res => res.json()).then(memorandos => {
+    fetch(`${SCRIPT_URL}?buscar=memorandos`, { method: "GET", mode: "cors" }).then(res => res.json()).then(memorandos => {
         if (selectFiltro) selectFiltro.innerHTML = '<option value="">🔍 Filtrar por número de memorando...</option>'; 
         if (datalistCadastro) datalistCadastro.innerHTML = '';
         memorandos.forEach(memo => { if (memo) { if (selectFiltro) { const opt = document.createElement('option'); opt.value = memo; opt.textContent = memo; selectFiltro.appendChild(opt); } if (datalistCadastro) { const optD = document.createElement('option'); optD.value = memo; datalistCadastro.appendChild(optD); } } });
@@ -425,7 +427,7 @@ function fecharModalCanteiros() { if (document.getElementById('modalCanteiros'))
 function carregarCanteirosDinamicos() {
     const selectCanteiro = document.getElementById('canteiroTrabalho'), corpoTabelaCanteiros = document.getElementById('corpoTabelaCanteiros');
     if (!selectCanteiro) return;
-    fetch(`${SCRIPT_URL}?buscar=canteiros`).then(res => res.json()).then(canteiros => {
+    fetch(`${SCRIPT_URL}?buscar=canteiros`, { method: "GET", mode: "cors" }).then(res => res.json()).then(canteiros => {
         selectCanteiro.innerHTML = '<option value="">-- Selecione o Canteiro --</option>'; if (corpoTabelaCanteiros) corpoTabelaCanteiros.innerHTML = '';
         canteiros.forEach(nomeCanteiro => { if (nomeCanteiro) { const option = document.createElement('option'); option.value = nomeCanteiro; option.textContent = nomeCanteiro; selectCanteiro.appendChild(option); if (corpoTabelaCanteiros) { const tr = document.createElement('tr'); tr.innerHTML = `<td>${nomeCanteiro}</td><td style="text-align:center;"><button onclick="excluirCanteiroServidor('${nomeCanteiro}', this)">Excluir</button></td>`; corpoTabelaCanteiros.appendChild(tr); } } });
     }).catch(err => console.error(err));
@@ -433,11 +435,11 @@ function carregarCanteirosDinamicos() {
 
 function adicionarNovoCanteiroServidor() {
     const inputNome = document.getElementById('novoCanteiroNome'), nomeCanteiro = inputNome ? inputNome.value.trim() : ""; if (!nomeCanteiro) return;
-    fetch(SCRIPT_URL, { method: 'POST', body: JSON.stringify({ acao: "cadastrarCanteiro", nome: nomeCanteiro }) }).then(() => { alert('Canteiro cadastrado!'); if (inputNome) inputNome.value = ""; carregarCanteirosDinamicos(); });
+    fetch(SCRIPT_URL, { method: 'POST', mode: 'cors', body: JSON.stringify({ acao: "cadastrarCanteiro", nome: nomeCanteiro }) }).then(() => { alert('Canteiro cadastrado!'); if (inputNome) inputNome.value = ""; carregarCanteirosDinamicos(); });
 }
 
 function excluirCanteiroServidor(nomeCanteiro, botao) {
     if (!confirm(`Deseja remover "${nomeCanteiro}"?`)) return; botao.disabled = true;
-    fetch(SCRIPT_URL, { method: 'POST', body: JSON.stringify({ acao: "excluirCanteiro", nome: nomeCanteiro }) }).then(() => { alert('Canteiro removido!'); carregarCanteirosDinamicos(); });
+    fetch(SCRIPT_URL, { method: 'POST', mode: 'cors', body: JSON.stringify({ acao: "excluirCanteiro", nome: nomeCanteiro }) }).then(() => { alert('Canteiro removido!'); carregarCanteirosDinamicos(); });
 }
 // FIM DEFINITIVO DO ARQUIVO SCRIPT.JS
