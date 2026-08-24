@@ -117,7 +117,7 @@ document.getElementById('formPreso').addEventListener('submit', function(e) {
     fetch(urlVerificar)
     .then(res => res.json())
     .then(resposta => {
-        const registros = resposta.dados || [];
+        const registros = reply = resposta.dados || [];
         
         const historicoRecente = registros.find(preso => {
             const prontuarioBanco = String(preso.prontuario || "").trim().toLowerCase();
@@ -173,7 +173,7 @@ document.getElementById('formPreso').addEventListener('submit', function(e) {
     });
 });
 // ==========================================================================
-// 3. ENVIO DE PARECERES INTEGRADO E NAVEGAÇÃO DE PÁGINAS
+// 3. ENVIO DE PARECERES INTEGRADO (JUSTIFICATIVA OBRIGATÓRIA) E NAVEGAÇÃO
 // ==========================================================================
 
 function salvarVoto(idPreso, botaoClicado) {
@@ -182,12 +182,27 @@ function salvarVoto(idPreso, botaoClicado) {
     const campoDecisao = linhaTr.querySelector('select');
     const campoObservacao = linhaTr.querySelector('textarea');
 
+    // 1. Validação da seleção do voto
     if (!campoDecisao) { alert("Campo de voto não encontrado."); return; }
     const decisao = campoDecisao.value;
-    if (!decisao || decisao.trim() === "") { alert("Selecione SIM ou NÃO antes de votar!"); return; }
+    if (!decisao || decisao.trim() === "") { alert("Selecione uma decisão (SIM ou NÃO) antes de votar!"); return; }
 
-    botaoClicado.disabled = true; botaoClicado.innerText = "Enviando...";
-    const obs = campoObservacao ? campoObservacao.value : "";
+    // 2. TRAVA DE SEGURANÇA CRUCIAL: Torna a justificativa/observação 100% obrigatória
+    if (!campoObservacao || campoObservacao.value.trim() === "") {
+        alert("🚨 ATENÇÃO: É obrigatório digitar uma justificativa ou observação detalhada para registrar este voto!");
+        if (campoObservacao) {
+            campoObservacao.focus(); // Coloca o cursor piscando na caixa de texto
+            campoObservacao.style.borderColor = "#dc2626"; // Alerta visual com borda vermelha
+        }
+        return; // Bloqueia e impede o envio dos dados para o servidor
+    }
+
+    // Se preenchido corretamente, limpa a borda vermelha de erro e prossegue
+    campoObservacao.style.borderColor = "#cbd5e1";
+    botaoClicado.disabled = true; 
+    botaoClicado.innerText = "Enviando...";
+    
+    const obs = campoObservacao.value.trim();
 
     const dadosEnvio = {
         acao: "salvarAvaliacao", idPreso: idPreso,
@@ -217,7 +232,7 @@ function atualizarControlesPagina(totalRegistros) {
     btnProximo.disabled = (paginaAtual === totalPaginas);
 }
 // ==========================================================================
-// 4. TABELA MASTER EXPANDIDA - AUDITORIA, 8 SETORES E SELEÇÃO DE GAVETAS BRUTAS
+// 4. TABELA MASTER EXPANDIDA - AUDITORIA, 8 SETORES E GESTÃO DAS TRAVAS
 // ==========================================================================
 
 function carregarDados() {
@@ -227,7 +242,6 @@ function carregarDados() {
 
     corpo.innerHTML = '<tr><td colspan="5">Carregando dados confidenciais...</td></tr>';
 
-    // LIMPEZA DE TEXTO BLINDADA CONTRA CONFLITOS DE ACENTOS (Direção vira direcao)
     const setorLimpoChecagem = String(setorLogadoAtualmente).toLowerCase().normalize("NFD").replace(/[\u0300-\u036f]/g, "");
 
     if (setorLimpoChecagem === "direcao") {
@@ -334,8 +348,8 @@ function carregarDados() {
 
 // ROBÔ DE REDAÇÃO DE ATAS: Mapeia as colunas por índices físicos fixos da tabela de 13 colunas da Direção
 function prepararEImprimirAtaCTC() {
-    const corpoTabela = document.getElementById('corpoTabela');
-    const linhasPresos = corpoTabela ? corpoTabela.querySelectorAll('tr') : [];
+    const cuerpoTabela = document.getElementById('corpoTabela');
+    const linhasPresos = cuerpoTabela ? cuerpoTabela.querySelectorAll('tr') : [];
     
     const filtroSeletor = document.getElementById('filtroMemorando');
     let numeroCTCOficial = filtroSeletor ? filtroSeletor.value.trim() : "";
@@ -352,7 +366,6 @@ function prepararEImprimirAtaCTC() {
         const celulas = linha.cells;
         if (celulas.length < 5) return;
 
-        // ÍNDICES FÍSICOS DA TABELA DE 13 COLUNAS DO PAINEL DA DIREÇÃO
         if (!numeroCTCOficial) {
             numeroMemorandoCapturado = celulas[0].innerText.trim(); // Coluna 1: Memorando
         }
@@ -361,7 +374,6 @@ function prepararEImprimirAtaCTC() {
         const prontuarioPreso = celulas[3].innerText.trim();              // Coluna 4: Prontuário
         const canteiroProposto = celulas[4].innerText.trim().toUpperCase(); // Coluna 5: Canteiro Proposto
         
-        // Puxa o veredito final da Direção que fica cravado na última coluna (Índice 12)
         let decisaoDirecao = "PENDENTE";
         const celulaVotoDirecao = celulas[12]; 
         
