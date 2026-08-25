@@ -223,6 +223,7 @@ if (document.getElementById('formPreso')) {
         .finally(() => { btnCadastro.disabled = false; btnCadastro.innerText = "Cadastrar Preso"; });
     });
 }
+
 function salvarVoto(idPreso, botaoClicado) {
     if (!botaoClicado) return;
     const linhaTr = botaoClicado.closest('tr');
@@ -233,24 +234,48 @@ function salvarVoto(idPreso, botaoClicado) {
     const decisao = campoDecisao.value;
     if (!decisao || decisao.trim() === "") { alert("Selecione uma decisão antes de votar!"); return; }
 
-    if (!campoObservacao || campoObservacao.value.trim() === "") {
-        alert("Atenção: É obrigatório digitar uma justificativa detalhada!");
-        if (campoObservacao) { campoObservacao.focus(); campoObservacao.style.borderColor = "#dc2626"; }
-        return; 
+    // Normalização rigorosa para checar se o setor logado é a Direção
+    const setorLimpo = String(setorLogadoAtualmente).toLowerCase().normalize("NFD").replace(/[\u0300-\u036f]/g, "").trim();
+
+    // Regra de validação: Só obriga a justificativa se NÃO for a Direção
+    if (setorLimpo !== "direcao") {
+        if (!campoObservacao || campoObservacao.value.trim() === "") {
+            alert("Atenção: É obrigatório digitar uma justificativa detalhada!");
+            if (campoObservacao) { campoObservacao.focus(); campoObservacao.style.borderColor = "#dc2626"; }
+            return; 
+        }
     }
 
-    campoObservacao.style.borderColor = "#cbd5e1";
+    if (campoObservacao) campoObservacao.style.borderColor = "#cbd5e1";
     botaoClicado.disabled = true; botaoClicado.innerText = "Enviando...";
     
+    // Captura o texto digitado ou envia vazio caso o Diretor não queira preencher
+    const textoJustificativa = campoObservacao ? campoObservacao.value.trim() : "";
+
+    // CORREÇÃO CRÍTICA: Envia estritamente em formato JSON utilizando a ação correta exigida pelo seu Apps Script
     fetch(SCRIPT_URL, {
         method: 'POST',
         mode: 'cors',
         redirect: 'follow',
-        body: JSON.stringify({ acao: "salvarAvaliacao", idPreso: idPreso, setor: setorLogadoAtualmente, decisao: decisao, observacao: campoObservacao.value.trim() })
+        body: JSON.stringify({ 
+            acao: "salvarAvaliacao", 
+            idPreso: idPreso, 
+            setor: setorLogadoAtualmente, 
+            decisao: decisao, 
+            observacao: textoJustificativa 
+        })
     })
-    .then(() => { alert('Avaliação registrada com sucesso!'); carregarDados(); })
-    .catch(err => { console.error(err); alert('Sincronizando tabelas...'); carregarDados(); });
+    .then(() => { 
+        alert('Avaliação registrada com sucesso!'); 
+        carregarDados(); 
+    })
+    .catch(err => { 
+        console.error(err); 
+        alert('Erro ao salvar voto. Sincronizando tabelas...'); 
+        carregarDados(); 
+    });
 }
+
 
 function alternarFiltroPendentes(checkbox) { filtrarApenasPendentes = checkbox.checked; paginaAtual = 1; carregarDados(); }
 function mudarPagina(direcao) { paginaAtual += direcao; carregarDados(); }
@@ -280,13 +305,15 @@ function atualizarCanteiroPreso(idPreso, seletorCanteiro) {
         else { alert("Erro ao salvar canteiro."); seletorCanteiro.style.background = "#fee2e2"; }
     }).catch(() => { seletorCanteiro.style.background = "white"; });
 }
+
 function carregarDados() {
     const corpo = document.getElementById('corpoTabela');
     const cabecalho = document.getElementById('cabecalhoTabela');
     if (!corpo || !cabecalho) return;
 
-    corpo.innerHTML = '<tr><td colspan="5">Sincronizando dados confidenciais...</td></tr>';
-    const setorLimpoChecagem = String(setorLogadoAtualmente).toLowerCase().normalize("NFD").replace(/[\u0300-\u036f]/g, "");
+    corpo.innerHTML = '<tr><td colspan="13" style="text-align:center; font-weight:bold; color:#1e3a8a;">Sincronizando dados confidenciais...</td></tr>';
+    
+    const setorLimpoChecagem = String(setorLogadoAtualmente).toLowerCase().normalize("NFD").replace(/[\u0300-\u036f]/g, "").trim();
 
     cabecalho.innerHTML = setorLimpoChecagem === "direcao" ? 
         `<th>Memorando</th><th>Quem Incluiu</th><th>Nome</th><th>Prontuário</th><th>Canteiro</th><th>DISED</th><th>DIOQ</th><th>JURÍDICO</th><th>SOCIAL</th><th>PEDAGOGIA</th><th>ENFERMARIA</th><th>PSICOLOGIA</th><th>Sua Avaliação (Direção)</th>` :
@@ -298,38 +325,72 @@ function carregarDados() {
     .then(res => res.json())
     .then(listaCanteiros => {
         let opcoesCanteirosHtml = '<option value="" disabled>-- Opções --</option>';
-        listaCanteiros.forEach(c => { if(c) opcoesCanteirosHtml += `<option value="${c}">${c}</option>`; });
+        if (Array.isArray(listaCanteiros)) {
+            listaCanteiros.forEach(c => { if(c) opcoesCanteirosHtml += `<option value="${c}">${c}</option>`; });
+        }
 
         fetch(`${SCRIPT_URL}?setor=${encodeURIComponent(setorLogadoAtualmente)}&pendentes=${filtrarApenasPendentes}&pagina=${paginaAtual}&limite=${limitePorPagina}&buscaMemo=${encodeURIComponent(termoBuscaMemo)}`, { method: "GET", mode: "cors", redirect: "follow" })
         .then(res => res.json())
         .then(respostaServidor => {
             const presos = respostaServidor.dados || []; 
             corpo.innerHTML = '';
-            if (presos.length === 0) { corpo.innerHTML = `<tr><td colspan="13">Nenhum preso aguardando avaliação.</td></tr>`; atualizarControlesPagina(0); return; }
-
-            presos.forEach(preso => {
+            
+            if (presos.length === 0) { 
+                corpo.innerHTML = `<tr><td colspan="13" style="text-align:center; color:#64748b;">Nenhum preso aguardando avaliação.</td></tr>`; 
+                atualizarControlesPagina(0); 
+                return; 
+            }
+                       presos.forEach(preso => {
                 const tr = document.createElement('tr');
-                tr.setAttribute('data-memorando', preso.memorando || ""); tr.setAttribute('data-nome', preso.nome || ""); tr.setAttribute('data-prontuario', preso.prontuario || ""); tr.setAttribute('data-canteiro', preso.canteiro || "");
+                
+                tr.setAttribute('data-memorando', preso.memorando || ""); 
+                tr.setAttribute('data-nome', preso.nome || ""); 
+                tr.setAttribute('data-prontuario', preso.prontuario || ""); 
+                tr.setAttribute('data-canteiro', preso.canteiro || "");
+                tr.setAttribute('DATA-MEMORANDO', preso.memorando || ""); 
+                tr.setAttribute('DATA-NOME', preso.nome || ""); 
+                tr.setAttribute('DATA-PRONTUARIO', preso.prontuario || ""); 
+                tr.setAttribute('DATA-CANTEIRO', preso.canteiro || "");
 
                 const canteiroTexto = preso.canteiro || "Não Informado";
                 const votoDirecaoAnterior = preso.avaliacoes.find(a => String(a.setor).toLowerCase().normalize("NFD").replace(/[\u0300-\u036f]/g, "") === "direcao");
-                let estaBloqueadoPorTempo = false; let mensagemBloqueioHtml = "";
-                const ehInteligencia = votoDirecaoAnterior && votoDirecaoAnterior.decisao === "INTELIGÊNCIA";
-                if (ehInteligencia) tr.classList.add('linha-inteligencia');
+                let estaBloqueadoPorTempo = false; 
+                let mensagemBloqueioHtml = "";
+                
+                // Rastreamento universal que intercepta o bug "PONTO DA FESTA"
+                let ehInteligencia = false;
+                if (votoDirecaoAnterior) {
+                    const decisaoTexto = String(votoDirecaoAnterior.decisao || "").toUpperCase().normalize("NFD").replace(/[\u0300-\u036f]/g, "");
+                    const observacaoTexto = String(votoDirecaoAnterior.observacao || "").toUpperCase().normalize("NFD").replace(/[\u0300-\u036f]/g, "");
+                    
+                    if (decisaoTexto.includes("INTELIGENCIA") || observacaoTexto.includes("INTELIGENCIA") || decisaoTexto.includes("PONTO DA FESTA")) {
+                        ehInteligencia = true;
+                    }
+                }
+                
+                if (ehInteligencia) {
+                    tr.classList.add('linha-inteligencia');
+                    tr.style.backgroundColor = "#fff5f5"; 
+                }
 
-                if (votoDirecaoAnterior && votoDirecaoAnterior.dataVoto) {
-                    const dataLimiteLiberacao = new Date(votoDirecaoAnterior.dataVoto); dataLimiteLiberacao.setMonth(dataLimiteLiberacao.getMonth() + 6);
-                    if (new Date() < dataLimiteLiberacao) { estaBloqueadoPorTempo = true; mensagemBloqueioHtml = `<div class="alerta-trava-tempo">🔒 Bloqueado (6 Meses)<br><small>Liberado em: ${dataLimiteLiberacao.toLocaleDateString('pt-BR')}</small></div>`; }
+                if (votoDirecaoAnterior && votoDirecaoAnterior.dataVoto && !ehInteligencia) {
+                    const dataLimiteLiberacao = new Date(votoDirecaoAnterior.dataVoto); 
+                    dataLimiteLiberacao.setMonth(dataLimiteLiberacao.getMonth() + 6);
+                    if (new Date() < dataLimiteLiberacao) { 
+                        estaBloqueadoPorTempo = true; 
+                        mensagemBloqueioHtml = `<div class="alerta-trava-tempo" style="background:#fff1f2; color:#991b1b; padding:4px; border:1px solid #fee2e2; border-radius:4px; font-size:0.8rem; font-weight:bold;">🔒 Bloqueado (6 Meses)<br><small>Liberado em: ${dataLimiteLiberacao.toLocaleDateString('pt-BR')}</small></div>`; 
+                    }
                 }
 
                 let celulaCanteiroHtml = `<strong>${canteiroTexto}</strong>`;
-                if (setorLimpoChecagem === "direcao" || setorLimpoChecagem === "dioq") {
+                if ((setorLimpoChecagem === "direcao" || setorLimpoChecagem === "dioq") && !ehInteligencia) {
                     celulaCanteiroHtml = `<select onchange="atualizarCanteiroPreso(${preso.id}, this)" style="padding:4px; font-size:0.85rem; width:120px;">${opcoesCanteirosHtml}</select>`;
                     setTimeout(() => { const sel = tr.querySelector('select'); if (sel) sel.value = canteiroTexto; }, 10);
                 }
 
                 if (setorLimpoChecagem === "direcao") {
                     const formatarCelula = (s) => {
+                        if (ehInteligencia) return `<span class="voto-inteligencia" style="color:#dc2626; font-weight:bold;">Bloqueado</span>`;
                         const aval = preso.avaliacoes.find(a => String(a.setor).toLowerCase().normalize("NFD").replace(/[\u0300-\u036f]/g, "") === String(s).toLowerCase().normalize("NFD").replace(/[\u0300-\u036f]/g, ""));
                         if (!aval) return `<span class="voto-status voto-pendente">Pendente</span>`;
                         return `<span class="voto-status ${aval.decisao === 'SIM' ? 'voto-sim' : 'voto-nao'}">${aval.decisao}</span><div class="comentario-container">${aval.observacao}</div>`;
@@ -337,31 +398,43 @@ function carregarDados() {
 
                     let celulaVotoDirecao = '';
                     if (votoDirecaoAnterior) {
-                        celulaVotoDirecao = (ehInteligencia ? `<span class="voto-inteligencia">INTELIGÊNCIA</span>` : `<span class="voto-status ${votoDirecaoAnterior.decisao === 'SIM' ? 'voto-sim' : 'voto-nao'}">${votoDirecaoAnterior.decisao}</span>`) + `<div class="comentario-container">${votoDirecaoAnterior.observacao}</div>`;
+                        celulaVotoDirecao = ehInteligencia ? 
+                            `<div class="alerta-trava-tempo" style="background:#fff1f2; color:#dc2626; padding:8px; border:1px solid #fecdd3; border-radius:4px; font-size:0.85rem; font-weight:bold; text-align:center;">🔒 Bloqueado pela Inteligência</div>` : 
+                            `<span class="voto-status ${votoDirecaoAnterior.decisao === 'SIM' ? 'voto-sim' : 'voto-nao'}">${votoDirecaoAnterior.decisao}</span><div class="comentario-container">${votoDirecaoAnterior.observacao}</div>`;
+                        
+                        // CORREÇÃO AQUI: Variável corrigida para mensagemBloqueioHtml (com n)
                         if (estaBloqueadoPorTempo && !ehInteligencia) celulaVotoDirecao += mensagemBloqueioHtml;
-                    } else if (estaBloqueadoPorTempo) { celulaVotoDirecao = mensagemBloqueioHtml; }
-                    else { celulaVotoDirecao = `<select style="width:100%; margin-bottom:5px;"><option value="" selected disabled>-- Selecione --</option><option value="SIM">SIM</option><option value="NÃO">NÃO</option><option value="INTELIGÊNCIA">INTELIGÊNCIA</option></select><textarea placeholder="Decisão..."></textarea><button onclick="salvarVoto(${preso.id}, this)">Votar</button>`; }
+                    } else { 
+                        celulaVotoDirecao = `<select style="width:100%; margin-bottom:5px;"><option value="" selected disabled>-- Selecione --</option><option value="SIM">SIM</option><option value="NÃO">NÃO</option><option value="INTELIGÊNCIA">INTELIGÊNCIA</option></select><textarea placeholder="Decisão..."></textarea><button type="button" onclick="salvarVoto(${preso.id}, this)">Votar</button>`; 
+                    }
 
                     tr.innerHTML = `<td>${preso.memorando}</td><td><span class="tag-setor-autor">${preso.quemIncluiu}</span></td><td>${preso.nome}</td><td>${preso.prontuario}</td><td>${celulaCanteiroHtml}</td><td>${formatarCelula("Dised")}</td><td>${formatarCelula("Dioq")}</td><td>${formatarCelula("Jurídico")}</td><td>${formatarCelula("Social")}</td><td>${formatarCelula("Pedagogia")}</td><td>${formatarCelula("Enfermaria")}</td><td>${formatarCelula("Psicologia")}</td><td>${celulaVotoDirecao}</td>`;
                 } else {
                     let celulaAcao = '';
                     const jaAvaliou = preso.avaliacoes.find(a => String(a.setor).toLowerCase().normalize("NFD").replace(/[\u0300-\u036f]/g, "") === String(setorLogadoAtualmente).toLowerCase().normalize("NFD").replace(/[\u0300-\u036f]/g, ""));
-                    if (ehInteligencia) { celulaAcao = `<span class="voto-inteligencia">INTELIGÊNCIA</span>`; } 
-                    else if (estaBloqueadoPorTempo) { celulaAcao = mensagemBloqueioHtml; } 
-                    else if(jaAvaliou) { celulaAcao = `<span class="voto-status ${jaAvaliou.decisao === 'SIM' ? 'voto-sim' : 'voto-nao'}">Realizada: ${jaAvaliou.decisao}</span><div class="comentario-container">${jaAvaliou.observacao}</div>`; }
-                    else { celulaAcao = `<select style="width:100%; margin-bottom:5px;"><option value="" selected disabled>-- Selecione --</option><option value="SIM">SIM</option><option value="NÃO">NÃO</option></select><textarea placeholder="Justificativa..."></textarea><button onclick="salvarVoto(${preso.id}, this)">Votar</button>`; }
+                    
+                    if (ehInteligencia) { 
+                        celulaAcao = `<div class="alerta-trava-tempo" style="background:#fff1f2; color:#dc2626; padding:8px; border:1px solid #fecdd3; border-radius:4px; font-size:0.85rem; font-weight:bold; text-align:center; width:100%;">🔒 Bloqueado pela Inteligência</div>`; 
+                    } else if (estaBloqueadoPorTempo) { 
+                        celulaAcao = mensagemBloqueioHtml; 
+                    } else if(jaAvaliou) { 
+                        celulaAcao = `<span class="voto-status ${jaAvaliou.decisao === 'SIM' ? 'voto-sim' : 'voto-nao'}">Realizada: ${jaAvaliou.decisao}</span><div class="comentario-container">${jaAvaliou.observacao}</div>`; 
+                    } else { 
+                        celulaAcao = `<select style="width:100%; margin-bottom:5px;"><option value="" selected disabled>-- Selecione --</option><option value="SIM">SIM</option><option value="NÃO">NÃO</option></select><textarea placeholder="Justificativa..."></textarea><button type="button" onclick="salvarVoto(${preso.id}, this)">Votar</button>`; 
+                    }
 
                     tr.innerHTML = `<td>${preso.memorando}</td><td><span class="tag-setor-autor">${preso.quemIncluiu}</span></td><td>${preso.nome}</td><td>${preso.prontuario}</td><td>${celulaCanteiroHtml}</td><td>${celulaAcao}</td>`;
                 }
                 corpo.appendChild(tr);
             });
             atualizarControlesPagina(respostaServidor.totalRegistros || 0);
-        });
-    }).catch(() => { if (corpo) corpo.innerHTML = '<tr><td colspan="13">Erro na sincronização.</td></tr>'; });
+        }).catch(err => { console.error(err); });
+    }).catch(err => { 
+        console.error(err);
+        if (corpo) corpo.innerHTML = '<tr><td colspan="13" style="text-align:center; font-weight:bold; color:#dc2626;">Erro na sincronização.</td></tr>';
+    });
 }
-// ==========================================================================
-// 5. MOTOR INTELIGENTE DE GERAÇÃO TEXTUAL DE ATA PREMIUM (FIM DE REPETIÇÕES)
-// ==========================================================================
+
 
 // ==========================================================================
 // 5. MOTOR INTELIGENTE DE GERAÇÃO TEXTUAL DE ATA PREMIUM (CORREÇÃO FIREFOX)
@@ -374,16 +447,18 @@ function prepararEImprimirAtaCTC() {
         return; 
     }
 
+    const btnImprimir = document.getElementById('btnImprimir');
+    if (btnImprimir) btnImprimir.disabled = true;
+
     let textoMontadoPresos = ""; 
     let numeroMemorandoCapturado = document.getElementById('filtroMemorando') ? document.getElementById('filtroMemorando').value.trim() : "";
     let encontrouPresoValido = false;
 
     linhasPresos.forEach((linha) => {
-        // CORREÇÃO UNIVERSAL: Captura os atributos tanto em maiúsculo quanto em minúsculo para aceitar as travas do Firefox
         const m = linha.getAttribute('data-memorando') || linha.getAttribute('DATA-MEMORANDO');
         const n = linha.getAttribute('data-nome') || linha.getAttribute('DATA-NOME');
         const p = linha.getAttribute('data-prontuario') || linha.getAttribute('DATA-PRONTUARIO');
-        const c = linha.getAttribute('data-canteiro') || linha.getAttribute('DATA-CANTEIRO');
+        const c = inline = linha.getAttribute('data-canteiro') || linha.getAttribute('DATA-CANTEIRO');
         
         if (!n || !p || !c) return; 
         encontrouPresoValido = true;
@@ -404,25 +479,46 @@ function prepararEImprimirAtaCTC() {
             textoMontadoPresos += `Por outro lado, em análise para trabalho no canteiro <b>${c.toUpperCase()}</b>, com o preso indicado: <b>${n.toUpperCase()}</b>, prontuário nº <b>${p}</b>, com avaliações e pareceres dos setores envolvidos, teve sua solicitação de implante, <b>"INDEFERIDA" pela DIREÇÃO da Unidade</b>. `;
         } else if (decisaoDirecao === "RETIDO PELA INTELIGÊNCIA") {
             textoMontadoPresos += `Em análise de segurança de canteiro para trabalho no canteiro <b>${c.toUpperCase()}</b>, o preso indicado <b>${n.toUpperCase()}</b>, prontuário nº <b>${p}</b>, teve seus trâmites suspensos devido à <b>RESTRIÇÃO E INDEFERIDO PELA COMISSÃO</b>. `;
+        } else {
+            textoMontadoPresos += `O processo do interno <b>${n.toUpperCase()}</b>, prontuário nº <b>${p}</b>, indicado para o canteiro <b>${c.toUpperCase()}</b>, encontra-se atualmente em fase de análise e parecer técnico pelos membros desta comissão técnica. `;
         }
     });
 
     if (!encontrouPresoValido || textoMontadoPresos === "") { 
         alert("Nenhum registro de preso válido ou avaliado foi localizado para gerar a impressão!"); 
+        if (btnImprimir) btnImprimir.disabled = false;
         return; 
     }
     
-    const dataHoje = new Date(), mesesExtenso = ["janeiro", "fevereiro", "março", "abril", "maio", "junho", "julho", "agosto", "setembro", "outubro", "novembro", "dezembro"];
-    const textDataOficial = `Aos ${dataHoje.getDate()} dias do mês de ${mesesExtenso[dataHoje.getMonth()]} de ${dataHoje.getFullYear()}`;
+    const dataHoje = new Date();
+    const diasExtenso = ["zero", "um", "dois", "três", "quatro", "cinco", "seis", "sete", "oito", "nove", "dez", "onze", "doze", "treze", "quatorze", "quinze", "dezesseis", "dezessete", "dezoito", "dezenove", "vinte", "vinte e um", "vinte e dois", "vinte e três", "vinte e quatro", "vinte e cinco", "vinte e seis", "vinte e sete", "vinte e oito", "vinte e nove", "trinta", "trinta e um"];
+    const mesesExtenso = ["janeiro", "fevereiro", "março", "abril", "maio", "junho", "julho", "agosto", "setembro", "outubro", "novembro", "dezembro"];
     
-    const textoIntroducaoLimpo = `${textDataOficial}, foi elaborado pela DIOQ, o Memorando N°<b>${numeroMemorandoCapturado}</b>, com a indicação dos canteiros de trabalho, vagas disponíveis a serem preenchidos pelos presos desta unidade, que são avaliados individualmente, segundo critérios estipulados em determinação da Direção da Unidade em 01 de julho de 2022, pelos membros da Comissão Técnica de Classificação, ou seja, dos setores de Segurança, Jurídico, Social, Psicologia, Saúde, Pedagogia, Enfermaria, DIOQE e Direção Geral. No levantamento das informações contidas na comissão web, relata-se que:`;
+    const textDataOficial = `Aos ${diasExtenso[dataHoje.getDate()]} dias do mês de ${mesesExtenso[dataHoje.getMonth()]} de dois mil e vinte e seis`;
+    
+    const textoIntroducaoLimpo = `${textDataOficial}, foi elaborado pela DIOQ, o Memorando N°<b>${numeroMemorandoCapturado || "______"}</b>, com a indicação dos canteiros de trabalho, vagas disponíveis a serem preenchidos pelos presos desta unidade, que são avaliados individualmente, segundo critérios estipulados em determinação da Direção da Unidade, pelos membros da Comissão Técnica de Classificação, ou seja, dos setores de Segurança, Jurídico, Social, Psicologia, Saúde, Pedagogia, Enfermaria, DIOQE e Direção Geral. No levantamento das informações contidas na comissão web, relata-se que:`;
 
-    const elContainerTexto = document.getElementById('textoDataGerada').parentElement;
-    if (elContainerTexto) { 
-        elContainerTexto.innerHTML = `<p class="recuo-paragrafo-ata">${textoIntroducaoLimpo}</p><p class="recuo-paragrafo-ata" style="margin-top: 15px !important;" id="blocoVotosPresosImpressao">${textoMontadoPresos}</p><p class="fechamento-ata-paragrafo">Concluindo, é lavrada esta ata, que vai assinada pelos membros da comissão técnica avaliadora da PEL2.</p>`; 
+    // CORREÇÃO DEFINITIVA: Seleciona o elemento pai (.corpo-texto-ata) e reconstrói o HTML do zero, eliminando qualquer duplicação residual
+    const elementoTextoData = document.getElementById('textoDataGerada');
+    if (elementoTextoData) {
+        const conteinerPai = elementoTextoData.parentElement;
+        if (conteinerPai) {
+            conteinerPai.innerHTML = `
+                <p class="recuo-paragrafo-ata">${textoIntroducaoLimpo}</p>
+                <p class="recuo-paragrafo-ata" style="margin-top: 15px !important;" id="blocoVotosPresosImpressao">${textoMontadoPresos}</p>
+                <p class="fechamento-ata-paragrafo">Concluindo, é lavrada esta ata, que vai assinada pelos membros da comissão técnica avaliadora da PEL2.</p>
+            `;
+        }
     }
-    if (document.getElementById('numAtaDinamica')) document.getElementById('numAtaDinamica').innerText = numeroMemorandoCapturado;
-    setTimeout(function() { window.print(); carregarDados(); }, 600);
+    
+    if (document.getElementById('numAtaDinamica')) {
+        document.getElementById('numAtaDinamica').innerText = numeroMemorandoCapturado || "______";
+    }
+    
+    setTimeout(function() { 
+        window.print(); 
+        if (btnImprimir) btnImprimir.disabled = false;
+    }, 400);
 }
 
 
@@ -437,7 +533,94 @@ function carregarHistoricoDeMemorandos() {
 }
 
 function filtrarPorMemorando() { paginaAtual = 1; carregarDados(); }
-function exportarExcel() { /* Suprimido download legado */ }
+
+async function exportarExcel() {
+    const tabela = document.getElementById('tabelaMaster');
+    if (!tabela) {
+        alert("Erro: Estrutura da tabela não encontrada na página!");
+        return;
+    }
+
+    const linhas = tabela.querySelectorAll('tbody tr');
+    if (linhas.length === 0 || (linhas.length === 1 && linhas.innerText.includes("Sincronizando"))) {
+        alert("Não há registros carregados na tabela para realizar a exportação!");
+        return;
+    }
+
+    // Sinaliza no botão que o processamento começou
+    const btnExportar = document.getElementById('btnExportar');
+    if (btnExportar) {
+        btnExportar.disabled = true;
+        btnExportar.innerText = "⌛ Processando...";
+    }
+
+    try {
+        // CORREÇÃO DEFINITIVA: Se o navegador não carregou o SheetJS pelo HTML, puxa a biblioteca dinamicamente por CDN seguro
+        if (typeof XLSX === 'undefined') {
+            console.log("Injetando biblioteca SheetJS em tempo de execução...");
+            await new Promise((resolver, rejeitar) => {
+                const scriptCdn = document.createElement('script');
+                scriptCdn.src = "https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js";
+                scriptCdn.onload = resolver;
+                scriptCdn.onerror = rejeitar;
+                document.head.appendChild(scriptCdn);
+            });
+        }
+
+        const selectFiltro = document.getElementById('filtroMemorando');
+        const memoAtivo = selectFiltro && selectFiltro.value ? selectFiltro.value.replace(/[\/\\?%*:|"<>\s]/g, "_") : "GERAL";
+
+        const dadosExcel = [
+            ["Memorando", "Quem Incluiu", "Nome do Interno", "Prontuário", "Canteiro Proposto", "DISED", "DIOQ", "JURÍDICO", "SOCIAL", "PEDAGOGIA", "ENFERMARIA", "PSICOLOGIA", "AVALIAÇÃO FINAL (DIREÇÃO)"]
+        ];
+
+        linhas.forEach(linha => {
+            if (linha.cells.length < 5) return; 
+
+            const linhaDados = [];
+            for (let i = 0; i < linha.cells.length; i++) {
+                let textoCelula = linha.cells[i].innerText || "";
+                
+                const selectInterno = linha.cells[i].querySelector('select');
+                if (selectInterno) {
+                    textoCelula = selectInterno.value || "PENDENTE";
+                } else {
+                    textoCelula = textoCelula.replace(/\r?\n|\r/g, " ").trim();
+                }
+                linhaDados.push(textoCelula);
+            }
+            dadosExcel.push(linhaDados);
+        });
+
+        // Executa a montagem e download através do motor XLSX
+        const livroTrabalho = XLSX.utils.book_new();
+        const planilhaDados = XLSX.utils.aoa_to_sheet(dadosExcel);
+
+        const largurasColunas = dadosExcel.map((_, indiceColuna) => {
+            let tamanhoMaximo = Math.max(...dadosExcel.map(linha => (linha[indiceColuna] ? linha[indiceColuna].toString().length : 10)));
+            return { wch: tamanhoMaximo + 3 }; 
+        });
+        planilhaDados['!cols'] = largurasColunas;
+
+        XLSX.utils.book_append_sheet(livroTrabalho, planilhaDados, "Avaliações CTC");
+        XLSX.writeFile(livroTrabalho, `Ata_CTC_Memo_${memoAtivo}_PEL2.xlsx`);
+
+    } catch (erro) {
+        console.error("Falha ao exportar:", erro);
+        alert("Erro técnico ao processar a planilha. Verifique sua conexão de internet.");
+    } finally {
+        // Restaura o botão original após o término da operação
+        if (btnExportar) {
+            btnExportar.disabled = false;
+            btnExportar.innerText = "Exportar Excel";
+        }
+    }
+}
+
+
+
+
+
 function abrirModalCanteiros() { if (document.getElementById('modalCanteiros')) { document.getElementById('modalCanteiros').classList.remove('oculto'); carregarCanteirosDinamicos(); } }
 function fecharModalCanteiros() { if (document.getElementById('modalCanteiros')) document.getElementById('modalCanteiros').classList.add('oculto'); }
 
