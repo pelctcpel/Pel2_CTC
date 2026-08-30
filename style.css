@@ -1,5 +1,5 @@
 /* ==========================================================================
-   1. CONFIGURAÇÕES GERAIS, RESETS DO PAINEL WEB E INTERFACE
+   1. RESET SETTINGS, DASHBOARD WINDOW CONFIGURATIONS, AND LOGIN PANEL
    ========================================================================== */
 * { 
     box-sizing: border-box; 
@@ -98,7 +98,7 @@ button:hover { background: #172554; }
 .usuario-logado { display: flex; align-items: center; gap: 15px; }
 .usuario-logado span { font-size: 0.95rem; background: #e2e8f0; padding: 6px 12px; border-radius: 4px; color: #334155; }
 /* ==========================================================================
-   2. DIRETRIZES DA TABELA MASTER, MODAIS E CORES DE RESTRIÇÃO EM LOTE
+   2. DATA GRID STYLING, MODAL OVERLAYS, AND THE COLOR ENGINE FOR RESTRICTIONS
    ========================================================================== */
 table { width: 100%; border-collapse: collapse; margin-top: 15px; }
 th, td { border: 1px solid #e2e8f0; padding: 10px; text-align: left; }
@@ -133,20 +133,19 @@ th { background: #cbd5e1; color: #1e293b; font-weight: bold; }
 .linha-saude { background-color: #fef9c3 !important; }        /* Amarelo Suave (Enfermaria) */
 .linha-juridica { background-color: #ffedd5 !important; }     /* Laranja Suave (Jurídico) */
 .linha-inteligencia { background-color: #fee2e2 !important; }   /* Vermelho Suave (Direção - Intel) */
-.linha-colegiado { background-color: #ecfdf5 !important; }      /* Verde Água (Direção - Colegiado) */
+.linha-colegiado { background-color: #ffedd5 !important; }      /* Laranja Alerta de Reunião para o Comitê */
 
+/* Ocultação implacável e definitiva de formulários residuais dentro das linhas bloqueadas comuns */
 .linha-saude select, .linha-saude textarea, .linha-saude button,
 .linha-juridica select, .linha-juridica textarea, .linha-juridica button,
 .linha-inteligencia select, .linha-inteligencia textarea, .linha-inteligencia button,
-.linha-colegiado select, .linha-colegiado textarea, .linha-colegiado button { 
-    opacity: 0.20 !important; 
-    pointer-events: none !important; 
+.linha-colegiado .select-voto-setor, .linha-colegiado textarea, .linha-colegiado button {
+    display: none !important;
 }
 
-/* Exceção do Colegiado: Libera 100% os cliques para os setores continuarem votando e debatendo */
-.linha-colegiado select, .linha-colegiado textarea, .linha-colegiado button {
-    opacity: 1.0 !important; 
-    pointer-events: auto !important;
+/* Exceção da Direção Geral: Mantém os seus botões de desfecho visíveis para ela poder homologar */
+.select-voto-diretor, .select-voto-diretor + textarea, .select-voto-diretor ~ button, .btn-print {
+    display: inline-block !important;
 }
 
 .voto-inteligencia { background-color: #1e293b !important; color: #f8fafc !important; border-radius: 4px; padding: 4px 8px; font-weight: bold; font-size: 0.8rem; text-align: center; }
@@ -160,7 +159,7 @@ th { background: #cbd5e1; color: #1e293b; font-weight: bold; }
     #formPreso div > div { width: 100% !important; }
 }
 /* ==========================================================================
-   3. REGRAS EXCLUSIVAS DE IMPRESSÃO JUSTIFICADA (A4 VERTICAL)
+   3. OFFICIAL A4 PORTRAIT PRINTOUT STYLES AND SIGNATURES ALIGNMENT
    ========================================================================== */
 @media print {
     @page {
@@ -231,9 +230,10 @@ th { background: #cbd5e1; color: #1e293b; font-weight: bold; }
     .corpo-texto-ata { 
         display: block !important;
         text-align: justify !important; 
-        text-justify: inter-word !important; 
         font-size: 12pt !important; 
         line-height: 1.5 !important;
+        word-break: normal !important;
+        overflow-wrap: break-word !important;
     }
     
     .recuo-paragrafo-ata { 
@@ -260,8 +260,8 @@ th { background: #cbd5e1; color: #1e293b; font-weight: bold; }
     .bloco-assinaturas-ata { 
         display: grid !important; 
         grid-template-columns: 1fr 1fr !important; 
-        gap: 60px 40px !important; 
-        margin-top: 35mm !important; 
+        gap: 40px 40px !important; 
+        margin-top: 15mm !important; 
         page-break-inside: avoid !important; 
         break-inside: avoid !important;
     }
@@ -282,4 +282,39 @@ th { background: #cbd5e1; color: #1e293b; font-weight: bold; }
         margin: 0 auto 5px auto !important; 
     }
 }
-/* FIM COMPLETO DO ARQUIVO STYLE.CSS */
+/* END OF STYLE.CSS STABLE CORE v7.6 */
+
+/* TRAVA DE SEGURANÇA MESTRE - IMPEDE EXIBIÇÃO DE BOTÕES ADMINISTRATIVOS */
+.oculto {
+    display: none !important;
+}
+
+/* ALINHAMENTO SIMÉTRICO DOS DOIS BRASÕES NA ATA DE IMPRESSÃO */
+.timbre-topo-oficial {
+    display: flex !important;
+    justify-content: space-between !important;
+    align-items: center !important;
+    width: 100% !important;
+    margin-bottom: 20px !important;
+}
+
+.texto-timbre-central {
+    text-align: center !important;
+    flex: 1 !important;
+    font-size: 0.9rem !important;
+    font-weight: bold !important;
+    line-height: 1.4 !important;
+}
+
+.emblema-ata-uf {
+    height: 75px !important;
+    width: auto !important;
+}
+
+.emblema-esquerda {
+    margin-right: 15px !important;
+}
+
+.emblema-direita {
+    margin-left: 15px !important;
+}
