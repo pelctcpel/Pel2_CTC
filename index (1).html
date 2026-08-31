@@ -1,0 +1,225 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Painel CTC Web - PEL2</title>
+    <link rel="stylesheet" href="style.css">
+</head>
+<body>
+
+    <!-- ==========================================================================
+         1. TELA DE AUTENTICAÇÃO POR MATRIZ DO DEPPEN
+         ========================================================================== -->
+    <div id="telaLogin" class="container-login">
+        <div class="login-box">
+            <div style="text-align: center; margin-bottom: 20px;">
+                <img src="emblema.png" alt="DEPPEN PR" style="height: 70px; width: auto;">
+            </div>
+            <h2 style="text-align: center; margin-bottom: 5px; color: #1e3a8a;">Painel CTC Web</h2>
+            <p style="text-align: center;">Penitenciária Estadual de Londrina - PEL2</p>
+            
+            <label for="setorLogin">Selecione seu Setor:</label>
+            <select id="setorLogin">
+                <option value="" selected disabled>-- Escolha o Departamento --</option>
+                <option value="Dised">DISED (Comportamento)</option>
+                <option value="Dioq">DIOQ (Inclusão)</option>
+                <option value="Jurídico">Jurídico</option>
+                <option value="Social">Serviço Social</option>
+                <option value="Pedagogia">Pedagogia</option>
+                <option value="Enfermaria">Enfermaria</option>
+                <option value="Psicologia">Psicologia</option>
+                <option value="Direção">Direção Geral</option>
+                <option value="Direção">Inteligência</option>
+            </select>
+            <label for="senhaLogin">Senha Autorizada:</label>
+            <input type="password" id="senhaLogin" placeholder="••••••••">
+
+            <button type="button" style="width: 100%; margin-top: 15px;" onclick="efetuarLogin()">Entrar no Sistema</button>
+            
+            <div id="erroLogin" class="erro-mensagem oculto">
+                🛑 Senha incorreta ou setor inválido!
+            </div>
+        </div>
+    </div>
+    <!-- ==========================================================================
+         2. SISTEMA PRINCIPAL COMPLETO (PÓS-LOGIN)
+         ========================================================================== -->
+    <div id="sistemaPrincipal" class="container oculto">
+        <header class="header-sistema">
+            <div class="logo-titulo-container">
+                <img src="emblema.png" alt="DEPPEN" class="emblema-topo">
+                <div>
+                    <h1>Comissão Técnica de Classificação</h1>
+                    <small>Painel Operacional Web • PEL2</small>
+                </div>
+            </div>
+            <div class="usuario-logado oculto">
+                <span id="nomeSetorAtivo">Setor</span>
+                <button type="button" class="btn-sair" style="background: #475569; margin-top:0;" onclick="abrirPainelSenha()">⚙️ Senha</button>
+                <button type="button" class="btn-sair" onclick="fazerLogout()">Sair 🚪</button>
+            </div>
+        </header>
+
+        <!-- SUBMODAL: ALTERAR SENHA DO DEPARTAMENTO -->
+        <div id="blocoAlterarSenha" class="bloco oculto" style="background: #fff; border: 2px solid #cbd5e1;">
+            <h3>🔑 Atualizar Senha Operacional</h3>
+            <div style="display: flex; gap: 15px; flex-wrap: wrap; margin-top: 10px;">
+                <div style="flex: 1; min-width: 200px;">
+                    <label>Nova Senha:</label>
+                    <input type="password" id="novaSenhaInput" placeholder="Digite a nova senha">
+                </div>
+                <div style="flex: 1; min-width: 200px;">
+                    <label>Confirme a Nova Senha:</label>
+                    <input type="password" id="confirmarNovaSenhaInput" placeholder="Repita a nova senha">
+                </div>
+            </div>
+            <button type="button" onclick="salvarNovaSenha()">Salvar Nova Senha</button>
+            <button type="button" style="background:#64748b;" onclick="fecharPainelSenha()">Cancelar</button>
+        </div>
+
+        <!-- RECURSO DE CADASTRO: Visível para todos os operadores -->
+        <section id="blocoInclusao" class="bloco">
+            <h2>📝 Indicação de Novo Interno para Avaliação</h2>
+            <form id="formPreso">
+                <div>
+                    <div>
+                        <label for="memo">Número do Memorando:</label>
+                        <input type="text" id="memo" placeholder="Ex: 025/2026" required>
+                    </div>
+                    <div>
+                        <label for="nomePreso">Nome Completo do Interno:</label>
+                        <input type="text" id="nomePreso" placeholder="Nome sem abreviações" required>
+                    </div>
+                    <div>
+                        <label for="prontuario">Prontuário (PID):</label>
+                        <input type="number" id="prontuario" placeholder="Apenas números" required>
+                    </div>
+                    <div>
+                        <label for="canteiroTrabalho">Canteiro de Destino:</label>
+                        <select id="canteiroTrabalho" required>
+                            <option value="" disabled selected>Carregando opções...</option>
+                        </select>
+                    </div>
+                </div>
+                <div style="margin-top: 15px; display: flex; gap: 10px;">
+                    <button type="submit">Cadastrar Preso</button>
+                    <button type="button" style="background: #475569;" onclick="abrirModalCanteiros()">🛠️ Gerenciar Canteiros</button>
+                </div>
+            </form>
+        </section>
+        <!-- ==========================================================================
+             3. BARRA DE FILTROS AVANÇADOS E TABELA DE CONTAGEM TÁTICA
+             ========================================================================== -->
+        <section class="bloco">
+            <div style="display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 15px;">
+                <div style="flex: 1; min-width: 280px;">
+                    <label for="filtroMemorando" style="margin-top: 0;">Filtro Seletor de Demandas:</label>
+                    <select id="filtroMemorando" onchange="filtrarPorMemorando()">
+                        <option value="">🔍 Filtrar por número de memorando... (Exibir Todos)</option>
+                    </select>
+                </div>
+                
+                <div style="display: flex; gap: 10px; align-items: flex-end; margin-top: 15px;">
+                    <button type="button" style="background: #1e293b; margin-top: 0;" onclick="forcarAtualizacaoGeral()">🔄 Atualizar Lista</button>
+                    <button type="button" id="btnImprimir" class="btn-print oculto" style="margin-top: 0;" onclick="prepararEImprimirAtaCTC()">🖨️ Emitir Ata CTC</button>
+                    <button type="button" id="btnExportar" style="background: #0284c7; margin-top: 0;" class="oculto" onclick="exportarExcel()">📊 Exportar Excel</button>
+                </div>
+            </div>
+
+            <div class="barra-paginacao" style="margin-top: 15px;">
+                <label class="switch-label">
+                    <input type="checkbox" id="chkPendentes" onchange="alternarFiltroPendentes(this)">
+                    <span>Exibir apenas internos aguardando meu parecer técnico</span>
+                </label>
+                <div class="botoes-navegacao">
+                    <button type="button" id="btnPagAnterior" onclick="mudarPagina(-1)">◀ Anterior</button>
+                    <span id="indicadorPagina">Página 1 de 1</span>
+                    <button type="button" id="btnPagProxima" onclick="mudarPagina(1)">Próxima ▶</button>
+                </div>
+            </div>
+
+            <!-- TABELA MASTER DE CONFERÊNCIA DINÂMICA -->
+            <div style="overflow-x: auto; width: 100%; border-radius: 4px; border: 1px solid #e2e8f0;">
+                <table id="tabelaMaster">
+                    <thead>
+                        <tr id="cabecalhoTabela">
+                            <!-- Injetado dinamicamente via script.js -->
+                        </tr>
+                    </thead>
+                    <tbody id="corpoTabela">
+                        <!-- Injetado dinamicamente via script.js -->
+                    </tbody>
+                </table>
+            </div>
+        </section>
+    </div>
+    <!-- ==========================================================================
+         4. MODAIS ADMINISTRATIVOS E ELEMENTO TIMBRADO OCULTO DE IMPRESSÃO A4
+         ========================================================================== -->
+    <!-- MODAL GESTÃO DE CANTEIROS DE TRABALHO -->
+    <div id="modalCanteiros" class="modal-overlay oculto">
+        <div class="modal-box">
+            <div class="modal-header">
+                <h3>🛠️ Gerenciar Canteiros de Trabalho da PEL2</h3>
+                <button type="button" class="modal-close-btn" onclick="fecharModalCanteiros()">&times;</button>
+            </div>
+            <label>Adicionar Novo Canteiro Operacional:</label>
+            <div style="display: flex; gap: 10px; margin-bottom: 15px;">
+                <input type="text" id="novoCanteiroNome" placeholder="Ex: COZINHA GERAL">
+                <button type="button" style="margin-top: 0;" onclick="adicionarNovoCanteiroServidor()">➕ Inserir</button>
+            </div>
+            <div class="modal-table-container">
+                <table>
+                    <thead>
+                        <tr>
+                            <th>Nome do Canteiro</th>
+                            <th style="width: 100px; text-align: center;">Ação</th>
+                        </tr>
+                    </thead>
+                    <tbody id="corpoTabelaCanteiros">
+                        <!-- Injetado dinamicamente via script.js -->
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+
+    <!-- DOCUMENTO TIMBRADO DA ATA CTC (OCULTO NA WEB - SURGE APENAS NA IMPRESSÃO A4) -->
+    <div id="areaAtaImpressao">
+        <div class="timbre-topo-oficial">
+            <img src="emblema.png" alt="Brasão DEPPEN" class="emblema-ata-uf emblema-esquerda">
+            <div class="texto-timbre-central">
+                GOVERNO DO ESTADO DO PARANÁ<br>
+                SECRETARIA DE ESTADO DA SEGURANÇA PÚBLICA<br>
+                DEPARTAMENTO DE POLÍCIA PENAL - DEPPEN<br>
+                PENITENCIÁRIA ESTADUAL DE LONDRINA II - PEL2<br>
+                COMISSÃO TÉCNICA DE CLASSIFICAÇÃO - CTC
+            </div>
+            <img src="emblema2.png" alt="Brasão Estado" class="emblema-ata-uf emblema-direita">
+        </div>
+        <div class="titulo-ata-oficial">
+
+            ATA DA REUNIÃO DA CTC – MEMORANDO N° <span id="numAtaDinamica">______</span>
+        </div>
+        <div class="corpo-texto-ata">
+            <p id="textoDataGerada" style="text-align: center; font-style: italic; color: #475569; margin-top: 30px;">
+                Aguardando processamento dos dados da tabela para renderização oficial...
+            </p>
+        </div>
+        <div class="bloco-assinaturas-ata" style="margin-top: 40px;">
+            <div class="item-visto-ata"><div class="linha-visto"></div>DIREÇÃO GERAL</div>
+            <div class="item-visto-ata"><div class="linha-visto"></div>CHEFIA DE SEGURANÇA / DIOQ</div>
+            <div class="item-visto-ata"><div class="linha-visto"></div>SETOR JURÍDICO</div>
+            <div class="item-visto-ata"><div class="linha-visto"></div>SERVIÇO SOCIAL</div>
+            <div class="item-visto-ata"><div class="linha-visto"></div>SETOR DE PSICOLOGIA</div>
+            <div class="item-visto-ata"><div class="linha-visto"></div>SETOR DE SAÚDE / ENFERMARIA</div>
+            <div class="item-visto-ata"><div class="linha-visto"></div>SETOR DE PEDAGOGIA</div>
+            <div class="item-visto-ata"><div class="linha-visto"></div>DISED (OPINATIVO)</div>
+        </div>
+    </div>
+
+    <!-- CARREGAMENTO DOS MOTORES DE INTELIGÊNCIA EM SCRIPT JAVASCRIPT -->
+    <script src="script.js"></script>
+</body>
+</html>
