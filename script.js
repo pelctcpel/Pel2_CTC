@@ -253,6 +253,10 @@ function carregarDados() {
                 const vDir = preso.avaliacoes.find(a => String(a.setor).toLowerCase().normalize("NFD").replace(/[\u0300-\u036f]/g, "").trim() === "direcao");
                 const vEnf = preso.avaliacoes.find(a => String(a.setor).toLowerCase().normalize("NFD").replace(/[\u0300-\u036f]/g, "").trim() === "enfermaria");
                 const vJur = preso.avaliacoes.find(a => String(a.setor).toLowerCase().normalize("NFD").replace(/[\u0300-\u036f]/g, "").trim() === "juridico");
+                const vDis = preso.avaliacoes.find(a => String(a.setor).toLowerCase().normalize("NFD").replace(/[\u0300-\u036f]/g, "").trim() === "dised");
+
+                // Mapeia se a DISED já colocou justificativa de comportamento legítima
+                const disedJaComentou = (vDis && vDis.observacao && vDis.observacao.toString().trim().length >= 3);
 
                 let classeTarja = ""; let textoTarja = ""; let justificativaBloqueio = "";
                 
@@ -290,6 +294,7 @@ function carregarDados() {
                     } else if (vDir && vDir.decisao && vDir.decisao.toString().trim() !== "" && vDir.decisao.toString().trim() !== "DELETAR_VOTO" && vDir.decisao !== "REUNIAO_COLEGIADO") {
                         celV = `<span class="voto-status ${vDir.decisao==='SIM'?'voto-sim':'voto-nao'}">${vDir.decisao}</span><div class="comentario-container">${vDir.observacao || ""}</div>`;
                     } else { 
+                        // DIREÇÃO DIRETAMENTE LIBERADA: O Diretor ignora a trava da DISED e pode votar a qualquer momento
                         let opcoesDiretorHtml = `<option value="" selected disabled>-- Opções --</option><option value="SIM">SIM (Aprovar)</option><option value="NÃO">NÃO (Reprovar)</option>`;
                         if (classeTarja === "linha-colegiado") {
                             opcoesDiretorHtml = `<option value="" selected disabled>-- Concluir Reunião --</option><option value="SIM">SIM (Aprovar)</option><option value="NÃO">NÃO (Reprovar)</option>`;
@@ -321,13 +326,19 @@ function carregarDados() {
                         const jaV = preso.avaliacoes.find(a => String(a.setor).toLowerCase().normalize("NFD").replace(/[\u0300-\u036f]/g, "").trim() === sLimpo);
                         
                         if (!jaV || !jaV.decisao || jaV.decisao.toString().trim() === "" || jaV.decisao.toString().trim() === "DELETAR_VOTO") {
-                            let optsSetorHtml = `<option value="" selected disabled>-- Opções --</option><option value="SIM">SIM (Favorável)</option><option value="NÃO">NÃO (Desfavorável)</option>`;
-                            if (sLimpo === "enfermaria" || sLimpo === "juridico") optsSetorHtml += `<option value="${sLimpo === 'enfermaria' ? 'BLOQUEIO_SAUDE' : 'BLOQUEIO_JURIDICO'}">BLOQUEAR PRESO</option>`;
                             
-                            if (classeTarja === "linha-colegiado") {
-                                celA = `<div class="voto-inteligencia" style="font-size:0.75rem; white-space:normal; width:100%; padding:8px; background-color:#c2410c !important;"><b>🔒 Retido: Reunião de Comitê</b><div style="font-size:0.75rem; font-weight:normal; margin-top:5px; border-top:1px solid rgba(255,255,255,0.2); padding-top:4px; font-style:italic; text-align:left; color:#cbd5e1;">Votação suspensa. Aguardando debate.</div></div>`;
+                            // NOVA REGRA DE SINAL OPERACIONAL: Se o setor logado NÃO for a DISED, e a DISED ainda não comentou, congela o formulário na hora com o aviso
+                            if (sLimpo !== "dised" && !disedJaComentou) {
+                                celA = `<div class="voto-inteligencia" style="font-size:0.7rem; background-color:#64748b !important; font-weight:normal; white-space:normal; padding:6px; line-height:1.3;">⏳ Aguardando parecer de comportamento da DISED para liberar votação técnica.</div>`;
                             } else {
-                                celA = `<select class="select-voto-setor" style="width:100%; margin-bottom:5px;">${optsSetorHtml}</select><textarea placeholder="Justificativa..."></textarea><button type="button" onclick="salvarVoto(${preso.id}, this)">Votar</button>`;
+                                let optsSetorHtml = `<option value="" selected disabled>-- Opções --</option><option value="SIM">SIM (Favorável)</option><option value="NÃO">NÃO (Desfavorável)</option>`;
+                                if (sLimpo === "enfermaria" || sLimpo === "juridico") optsSetorHtml += `<option value="${sLimpo === 'enfermaria' ? 'BLOQUEIO_SAUDE' : 'BLOQUEIO_JURIDICO'}">BLOQUEAR PRESO</option>`;
+                                
+                                if (classeTarja === "linha-colegiado") {
+                                    celA = `<div class="voto-inteligencia" style="font-size:0.75rem; white-space:normal; width:100%; padding:8px; background-color:#c2410c !important;"><b>🔒 Retido: Reunião de Comitê</b><div style="font-size:0.75rem; font-weight:normal; margin-top:5px; border-top:1px solid rgba(255,255,255,0.2); padding-top:4px; font-style:italic; text-align:left; color:#cbd5e1;">Votação suspensa. Aguardando debate.</div></div>`;
+                                } else {
+                                    celA = `<select class="select-voto-setor" style="width:100%; margin-bottom:5px;">${optsSetorHtml}</select><textarea placeholder="Justificativa..."></textarea><button type="button" onclick="salvarVoto(${preso.id}, this)">Votar</button>`;
+                                }
                             }
                         } else {
                             let dTxt = jaV.decisao === "BLOQUEIO_SAUDE" || jaV.decisao === "BLOQUEIO_JURIDICO" ? "BLOQUEADO" : jaV.decisao;
@@ -352,7 +363,7 @@ function prepararEImprimirAtaCTC() {
     let encontrouPresoValido = false;
 
     linhasPresos.forEach((linha) => {
-        const m = linha.getAttribute('data-memorando'); const n = linha.getAttribute('data-nome'); const p = linha.getAttribute('data-prontuario'); const c = linha.getAttribute('data-canteiro');
+        const m = inlineMemo = linha.getAttribute('data-memorando'); const n = linha.getAttribute('data-nome'); const p = linha.getAttribute('data-prontuario'); const c = linha.getAttribute('data-canteiro');
         if (!n || !p || !c) return; encontrouPresoValido = true; if (!numeroMemorandoCapturado) numeroMemorandoCapturado = m;
         
         let dec = "PENDENTE"; const celV = linha.cells[linha.cells.length - 1]; 
@@ -403,7 +414,6 @@ function excluirCanteiroServidor(n, b) { if (!confirm(`Remover "${n}"?`)) return
 function forcarAtualizacaoGeral() { paginaAtual = 1; carregarDados(); carregarHistoricoDeMemorandos(); }
 function filtrarPorMemorando() { paginaAtual = 1; carregarDados(); }
 
-// CORREÇÃO SUPREMA DE CARACTERES: Injeta o cabeçalho \uFEFF (UTF-8 BOM) para obrigar o Microsoft Excel a ler os acentos e cedilhas nativamente de forma perfeita!
 async function exportarExcel() {
     try {
         const tabela = document.getElementById("tabelaMaster");
@@ -415,8 +425,6 @@ async function exportarExcel() {
         });
         const templateMeta = '<html xmlns:o="urn:schemas-microsoft-com:office:office" xmlns:x="urn:schemas-microsoft-com:office:excel" xmlns="http://w3.org"><head><meta charset="UTF-8"><!--[if gte mso  9]><xml><x:ExcelWorkbook><x:ExcelWorksheets><x:ExcelWorksheet><x:Name>Relatorio CTC</x:Name><x:WorksheetOptions><x:DisplayGridlines/></x:WorksheetOptions></x:Worksheet></x:ExcelWorksheets></x:ExcelWorkbook></xml><![endif]--></head><body>';
         const conteudoPlanilha = templateMeta + htmlClonado.outerHTML + "</body></html>";
-        
-        // CORREÇÃO TÁTICA: O prefixo \uFEFF força o Windows Excel a aplicar a codificação correta
         const blobPlanilha = new Blob(["\uFEFF" + conteudoPlanilha], { type: "application/vnd.ms-excel;charset=utf-8" });
         const linkDownload = document.createElement("a");
         linkDownload.href = URL.createObjectURL(blobPlanilha);
@@ -433,4 +441,4 @@ document.addEventListener("DOMContentLoaded", function() {
     inicializarFormularioPreso();
     carregarDados();
 });
-// FIM DO ARQUIVO SCRIPT.JS v8.4 SUPREMA BLINDAGEM DE CARACTERES - PEL2 DEPPEN
+// FIM DO ARQUIVO SCRIPT.JS v8.5 COMPLETO COM SENSOR DISED - PEL2 DEPPEN
