@@ -88,7 +88,6 @@ function configurarPermissoesDeTela(setor) {
     const btnImp = document.getElementById('btnImprimir');
     const btnExp = document.getElementById('btnExportar');
     
-    // FILTRO DE PERMISSÃO COMPACTO: Só remove a invisibilidade se for Direção ou Dioq
     if (sLimpo === "direcao" || sLimpo === "dioq") {
         if (btnImp) btnImp.classList.remove('oculto');
     } else {
@@ -103,8 +102,6 @@ function configurarPermissoesDeTela(setor) {
     const chk = document.getElementById('chkPendentes'); if (chk) chk.checked = filtrarApenasPendentes;
     paginaAtual = 1; 
 }
-
-
 function inicializarFormularioPreso() {
     const form = document.getElementById('formPreso'); if (!form) return;
     form.addEventListener('submit', function(e) {
@@ -115,7 +112,7 @@ function inicializarFormularioPreso() {
 
         fetch(`${SCRIPT_URL}?setor=Direcao&pendentes=false&pagina=1&limite=100000&_=${Date.now()}`, { method: "GET", mode: "cors", redirect: "follow" })
         .then(res => res.json()).then(resposta => {
-            const registros = responseData = resposta.dados || [];
+            const registros = resposta.dados || [];
             const historicoRecente = registros.find(preso => {
                 if (String(preso.prontuario || "").trim().toLowerCase() === prontuarioDigitado) {
                     const vDir = preso.avaliacoes.find(a => String(a.setor).toLowerCase().normalize("NFD").replace(/[\u0300-\u036f]/g, "").trim() === "direcao");
@@ -242,7 +239,7 @@ function carregarDados() {
             
             if (termoBuscaNormalizado === "reuniao") {
                 presos = presos.filter(p => p.avaliacoes.some(a => a.decisao === "REUNIAO_COLEGIADO"));
-                atualuberPagina = atualizarControlesPagina(1);
+                atualizarControlesPagina(1);
             } else {
                 atualizarControlesPagina(respostaServidor.totalRegistros || 0);
             }
@@ -285,7 +282,6 @@ function carregarDados() {
                 if (sLimpo === "direcao") {
                     let celV = '';
                     
-                    // BALÃO PROTETOR DO DIRETOR: Se houver algum bloqueio ativo de Saúde ou Jurídico, oculta os inputs dele na hora!
                     if (classeTarja && (classeTarja === "linha-saude" || classeTarja === "linha-juridica")) {
                         let bObs = justificativaBloqueio ? `<div style="font-size:0.75rem; margin-top:5px; border-top:1px solid rgba(255,255,255,0.2); padding-top:4px; font-style:italic; text-align:left; color:#cbd5e1;">Motivo: "${justificativaBloqueio}"</div>` : "";
                         celV = `<div class="voto-inteligencia" style="font-size:0.75rem; white-space:normal; width:100%; padding:8px;"><b>${textoTarja}</b>${bObs}</div>`;
@@ -407,8 +403,34 @@ function excluirCanteiroServidor(n, b) { if (!confirm(`Remover "${n}"?`)) return
 function forcarAtualizacaoGeral() { paginaAtual = 1; carregarDados(); carregarHistoricoDeMemorandos(); }
 function filtrarPorMemorando() { paginaAtual = 1; carregarDados(); }
 
+// CORREÇÃO SUPREMA DE CARACTERES: Injeta o cabeçalho \uFEFF (UTF-8 BOM) para obrigar o Microsoft Excel a ler os acentos e cedilhas nativamente de forma perfeita!
+async function exportarExcel() {
+    try {
+        const tabela = document.getElementById("tabelaMaster");
+        if (!tabela) { alert("Tabela master não localizada na página!"); return; }
+        let htmlClonado = tabela.cloneNode(true);
+        htmlClonado.querySelectorAll("select, textarea, button").forEach(elem => elem.remove());
+        htmlClonado.querySelectorAll("td, th").forEach(cel => {
+            if (cel.innerText) { cel.innerText = cel.innerText.trim().replace(/\n/g, " "); }
+        });
+        const templateMeta = '<html xmlns:o="urn:schemas-microsoft-com:office:office" xmlns:x="urn:schemas-microsoft-com:office:excel" xmlns="http://w3.org"><head><meta charset="UTF-8"><!--[if gte mso  9]><xml><x:ExcelWorkbook><x:ExcelWorksheets><x:ExcelWorksheet><x:Name>Relatorio CTC</x:Name><x:WorksheetOptions><x:DisplayGridlines/></x:WorksheetOptions></x:Worksheet></x:ExcelWorksheets></x:ExcelWorkbook></xml><![endif]--></head><body>';
+        const conteudoPlanilha = templateMeta + htmlClonado.outerHTML + "</body></html>";
+        
+        // CORREÇÃO TÁTICA: O prefixo \uFEFF força o Windows Excel a aplicar a codificação correta
+        const blobPlanilha = new Blob(["\uFEFF" + conteudoPlanilha], { type: "application/vnd.ms-excel;charset=utf-8" });
+        const linkDownload = document.createElement("a");
+        linkDownload.href = URL.createObjectURL(blobPlanilha);
+        linkDownload.download = "Relatorio_Presos_CTC.xls";
+        document.body.appendChild(linkDownload);
+        linkDownload.click();
+        document.body.removeChild(linkDownload);
+    } catch (err) {
+        alert("Erro técnico ao processar exportação de dados.");
+    }
+}
+
 document.addEventListener("DOMContentLoaded", function() {
     inicializarFormularioPreso();
     carregarDados();
 });
-// FIM DO ARQUIVO SCRIPT.JS v8.2 CORE REESTRUTURADO - PEL2 DEPPEN PR
+// FIM DO ARQUIVO SCRIPT.JS v8.4 SUPREMA BLINDAGEM DE CARACTERES - PEL2 DEPPEN
