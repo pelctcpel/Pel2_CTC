@@ -32,6 +32,7 @@
                 <option value="Direção">Direção Geral</option>
 		<option value="Inteligência">Inteligência</option>
             </select>
+
             <label for="senhaLogin">Senha Autorizada:</label>
             <input type="password" id="senhaLogin" placeholder="••••••••">
 
@@ -63,7 +64,7 @@
 
         <!-- SUBMODAL: ALTERAR SENHA DO DEPARTAMENTO -->
         <div id="blocoAlterarSenha" class="bloco oculto" style="background: #fff; border: 2px solid #cbd5e1;">
-            <h3>🔑 Atualizar Senha Operacional</h3>
+            <h3>🔑 Aktualizar Senha Operacional</h3>
             <div style="display: flex; gap: 15px; flex-wrap: wrap; margin-top: 10px;">
                 <div style="flex: 1; min-width: 200px;">
                     <label>Nova Senha:</label>
@@ -185,7 +186,23 @@
         </div>
     </div>
 
-    <!-- DOCUMENTO TIMBRADO DA ATA CTC (OCULTO NA WEB - SURGE APENAS NA IMPRESSÃO A4) -->
+    <!-- JANELA FLUTUANTE DE LEITURA COMPLETA (CORREÇÃO DE OURO: Removido o display:none inline que bloqueava o modal) -->
+    <div id="modalLeituraParecer" class="modal-overlay oculto">
+        <div class="modal-box" style="max-width: 500px !important;">
+            <div class="modal-header">
+                <h3 id="tituloModalParecer">📄 Parecer Técnico Completo</h3>
+                <button type="button" class="modal-close-btn" onclick="fecharModalLeituraParecer()">&times;</button>
+            </div>
+            <div id="conteudoModalParecer" style="font-size: 0.95rem; line-height: 1.5; color: #1e293b; padding: 12px; background: #f8fafc; border: 1px solid #e2e8f0; border-radius: 4px; max-height: 280px; overflow-y: auto; text-align: justify; white-space: pre-wrap;">
+                <!-- Injetado dinamicamente via script.js -->
+            </div>
+            <div style="text-align: right; margin-top: 15px;">
+                <button type="button" style="background: #475569; margin-top: 0;" onclick="fecharModalLeituraParecer()">Fechar Janela</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- DOCUMENTO TIMBRADO DA ATA CTC (OCULTO NA WEB - SURGE APENAS NA IMPRESSÃO A4 COM DUPLO BRASÃO LOCAL ESPELHADO) -->
     <div id="areaAtaImpressao">
         <div class="timbre-topo-oficial">
             <img src="emblema.png" alt="Brasão DEPPEN" class="emblema-ata-uf emblema-esquerda">
@@ -198,8 +215,7 @@
             </div>
             <img src="emblema2.png" alt="Brasão Estado" class="emblema-ata-uf emblema-direita">
         </div>
-        <div class="titulo-ata-oficial">
-
+        <div class="titulo-ata-oficial" style="margin-top: 20px;">
             ATA DA REUNIÃO DA CTC – MEMORANDO N° <span id="numAtaDinamica">______</span>
         </div>
         <div class="corpo-texto-ata">

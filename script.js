@@ -94,11 +94,9 @@ function configurarPermissoesDeTela(setor) {
         if (btnImp) btnImp.classList.add('oculto');
     }
     
-    if (sLimpo === "direcao") {
-        if (btnExp) btnExp.classList.remove('oculto');
-    } else {
-        if (btnExp) btnExp.classList.add('oculto');
-    }
+    // Libera o botão do Excel para 100% dos departamentos comitentes logados
+    if (btnExp) btnExp.classList.remove('oculto');
+
     const chk = document.getElementById('chkPendentes'); if (chk) chk.checked = filtrarApenasPendentes;
     paginaAtual = 1; 
 }
@@ -236,7 +234,8 @@ function carregarDados() {
         fetch(`${SCRIPT_URL}?setor=${encodeURIComponent(setorLogadoAtualmente)}&pendentes=${filtrarApenasPendentes}&pagina=${paginaAtual}&limite=${limitePorPagina}&buscaMemo=${encodeURIComponent(paramMemoApi)}&_=${Date.now()}`, { method: "GET", mode: "cors", redirect: "follow" })
         .then(res => res.json()).then(respostaServidor => {
             let presos = respostaServidor.dados || []; corpo.innerHTML = '';
-            
+            window.dadosPresosCarregadosParaExcel = presos;
+
             if (termoBuscaNormalizado === "reuniao") {
                 presos = presos.filter(p => p.avaliacoes.some(a => a.decisao === "REUNIAO_COLEGIADO"));
                 atualizarControlesPagina(1);
@@ -245,7 +244,6 @@ function carregarDados() {
             }
 
             if (presos.length === 0) { corpo.innerHTML = `<tr><td colspan="13" style="text-align:center; color:#64748b;">Nenhum preso localizado para este critério.</td></tr>`; return; }
-
             presos.forEach(preso => {
                 const tr = document.createElement('tr');
                 tr.setAttribute('data-memorando', preso.memorando || ""); tr.setAttribute('data-nome', preso.nome || ""); tr.setAttribute('data-prontuario', preso.prontuario || ""); tr.setAttribute('data-canteiro', preso.canteiro || "");
@@ -255,8 +253,16 @@ function carregarDados() {
                 const vJur = preso.avaliacoes.find(a => String(a.setor).toLowerCase().normalize("NFD").replace(/[\u0300-\u036f]/g, "").trim() === "juridico");
                 const vDis = preso.avaliacoes.find(a => String(a.setor).toLowerCase().normalize("NFD").replace(/[\u0300-\u036f]/g, "").trim() === "dised");
 
-                // Mapeia se a DISED já colocou justificativa de comportamento legítima
                 const disedJaComentou = (vDis && vDis.observacao && vDis.observacao.toString().trim().length >= 3);
+
+                // DATA CARREGADA NA LETRA D: Imprime o dia do cadastro abaixo do memorando
+                let textoDataInsercao = "";
+                if (preso.id) {
+                    const dataObj = new Date(Number(preso.id));
+                    if (!isNaN(dataObj.getTime())) {
+                        textoDataInsercao = `<div style="font-size:0.7rem; color:#64748b; font-weight:600; margin-top:4px; background:#e2e8f0; padding:2px 4px; border-radius:3px; display:inline-block;">📅 ${dataObj.toLocaleDateString('pt-BR')}</div>`;
+                    }
+                }
 
                 let classeTarja = ""; let textoTarja = ""; let justificativaBloqueio = "";
                 
@@ -274,15 +280,22 @@ function carregarDados() {
                     celCant = `<select onchange="atualizarCanteiroPreso(${preso.id}, this)" style="padding:4px; font-size:0.85rem; width:120px;">${optsHtml}</select>`;
                     setTimeout(() => { const sel = tr.querySelector('select'); if (sel) sel.value = preso.canteiro || ""; }, 5);
                 }
+                // COLA DE SEGURANÇA BASEADA EM ATRIBUTO: Guarda o texto diretamente na tag do botão via data-texto para o clique ler de forma limpa, à prova de falhas de rede ou quebras!
                 const formatarCelula = (s) => {
                     const aval = preso.avaliacoes.find(x => String(x.setor).toLowerCase().normalize("NFD").replace(/[\u0300-\u036f]/g, "").trim() === String(s).toLowerCase().normalize("NFD").replace(/[\u0300-\u036f]/g, "").trim());
                     if (!aval || !aval.decisao || aval.decisao.toString().trim() === "" || aval.decisao.toString().trim() === "undefined" || aval.decisao.toString().trim() === "DELETAR_VOTO") {
                         return `<span class="voto-status voto-pendente">Pendente</span>`;
                     }
                     let dTxt = aval.decisao === "BLOQUEIO_SAUDE" || aval.decisao === "BLOQUEIO_JURIDICO" ? "BLOQUEAR" : aval.decisao;
-                    return `<span class="voto-status ${aval.decisao === 'SIM' ? 'voto-sim' : 'voto-nao'}">${dTxt}</span><div class="comentario-container">${aval.observacao || ""}</div>`;
+                    let txtPuro = (aval.observacao || "").trim();
+                    
+                    let blocoTextoHtml = `<div class="comentario-container">${txtPuro}</div>`;
+                    if (txtPuro.length > 15) {
+                        // Injeta o texto escapado direto no atributo data-texto do elemento HTML
+                        blocoTextoHtml = `<button type="button" class="btn-ver-parecer-modal" data-setor="${s}" data-texto="${encodeURIComponent(txtPuro)}" style="background:#f1f5f9; color:#1e3a8a; border:1px solid #cbd5e1; font-size:0.75rem; padding:4px 6px; margin-top:4px; font-weight:600; width:100%; border-radius:3px; display:block; cursor:pointer;">📋 Ver Parecer</button>`;
+                    }
+                    return `<span class="voto-status ${aval.decisao === 'SIM' ? 'voto-sim' : 'voto-nao'}">${dTxt}</span>${blocoTextoHtml}`;
                 };
-
                 if (sLimpo === "direcao") {
                     let celV = '';
                     
@@ -294,7 +307,6 @@ function carregarDados() {
                     } else if (vDir && vDir.decisao && vDir.decisao.toString().trim() !== "" && vDir.decisao.toString().trim() !== "DELETAR_VOTO" && vDir.decisao !== "REUNIAO_COLEGIADO") {
                         celV = `<span class="voto-status ${vDir.decisao==='SIM'?'voto-sim':'voto-nao'}">${vDir.decisao}</span><div class="comentario-container">${vDir.observacao || ""}</div>`;
                     } else { 
-                        // DIREÇÃO DIRETAMENTE LIBERADA: O Diretor ignora a trava da DISED e pode votar a qualquer momento
                         let opcoesDiretorHtml = `<option value="" selected disabled>-- Opções --</option><option value="SIM">SIM (Aprovar)</option><option value="NÃO">NÃO (Reprovar)</option>`;
                         if (classeTarja === "linha-colegiado") {
                             opcoesDiretorHtml = `<option value="" selected disabled>-- Concluir Reunião --</option><option value="SIM">SIM (Aprovar)</option><option value="NÃO">NÃO (Reprovar)</option>`;
@@ -310,7 +322,7 @@ function carregarDados() {
                         return `<button type="button" style="background:#475569; color:#f8fafc; font-size:0.65rem; padding:3px 6px; margin-top:5px; display:block; width:100%; border-radius:3px; font-weight:600; text-transform:uppercase; letter-spacing:0.3px; border:none; cursor:pointer;" onclick="reabrirSetorPeloDiretor(${preso.id}, '${nomeSetor}', this)">🔄 Reabrir</button>`;
                     };
 
-                    let h1 = `<td>${preso.memorando}</td><td><span class="tag-setor-autor">${preso.quemIncluiu}</span></td><td>${preso.nome}</td><td>${preso.prontuario}</td>`;
+                    let h1 = `<td><b>${preso.memorando}</b><br>${textoDataInsercao}</td><td><span class="tag-setor-autor">${preso.quemIncluiu}</span></td><td>${preso.nome}</td><td>${preso.prontuario}</td>`;
                     let h2 = `<td>${celCant}</td><td>${formatarCelula("Dised")}${criarBotaoReset("Dised")}</td><td>${formatarCelula("Dioq")}${criarBotaoReset("Dioq")}</td><td>${formatarCelula("Jurídico")}${criarBotaoReset("Jurídico")}</td>`;
                     let h3 = `<td>${formatarCelula("Social")}${criarBotaoReset("Social")}</td><td>${formatarCelula("Pedagogia")}${criarBotaoReset("Pedagogia")}</td><td>${formatarCelula("Enfermaria")}${criarBotaoReset("Enfermaria")}</td><td>${formatarCelula("Psicologia")}${criarBotaoReset("Psicologia")}</td><td>${celV}${criarBotaoReset("Direção")}</td>`;
                     tr.innerHTML = h1 + h2 + h3;
@@ -327,7 +339,6 @@ function carregarDados() {
                         
                         if (!jaV || !jaV.decisao || jaV.decisao.toString().trim() === "" || jaV.decisao.toString().trim() === "DELETAR_VOTO") {
                             
-                            // NOVA REGRA DE SINAL OPERACIONAL: Se o setor logado NÃO for a DISED, e a DISED ainda não comentou, congela o formulário na hora com o aviso
                             if (sLimpo !== "dised" && !disedJaComentou) {
                                 celA = `<div class="voto-inteligencia" style="font-size:0.7rem; background-color:#64748b !important; font-weight:normal; white-space:normal; padding:6px; line-height:1.3;">⏳ Aguardando parecer de comportamento da DISED para liberar votação técnica.</div>`;
                             } else {
@@ -345,11 +356,21 @@ function carregarDados() {
                             celA = `<span class="voto-status ${jaV.decisao==='SIM'?'voto-sim':'voto-nao'}">Realizada: ${dTxt}</span><div class="comentario-container">${jaV.observacao || ""}</div>`;
                         }
                     }
-                    let s1 = `<td>${preso.memorando}</td><td><span class="tag-setor-autor">${preso.quemIncluiu}</span></td><td>${preso.nome}</td>`;
+                    let s1 = `<td><b>${preso.memorando}</b><br>${textoDataInsercao}</td><td><span class="tag-setor-autor">${preso.quemIncluiu}</span></td><td>${preso.nome}</td>`;
                     let s2 = `<td>${preso.prontuario}</td><td>${celCant}</td><td>${formatarCelula("Dised")}</td><td>${celA}</td>`;
                     tr.innerHTML = s1 + s2;
                 }
                 corpo.appendChild(tr);
+                
+                // MÓDULO DE ESCUTA REAL E DIRETA: Pega o atributo data-texto embutido na linha do próprio botão e abre o modal instantaneamente na hora do clique!
+                tr.querySelectorAll('.btn-ver-parecer-modal').forEach(botao => {
+                    botao.addEventListener('click', function(e) {
+                        e.preventDefault(); e.stopPropagation();
+                        const sNome = this.getAttribute('data-setor');
+                        const txtMascarado = this.getAttribute('data-texto');
+                        if (sNome && txtMascarado) { abrirModalLeituraParecer(sNome, decodeURIComponent(txtMascarado)); }
+                    });
+                });
             });
         });
     });
@@ -363,8 +384,8 @@ function prepararEImprimirAtaCTC() {
     let encontrouPresoValido = false;
 
     linhasPresos.forEach((linha) => {
-        const m = inlineMemo = linha.getAttribute('data-memorando'); const n = linha.getAttribute('data-nome'); const p = linha.getAttribute('data-prontuario'); const c = linha.getAttribute('data-canteiro');
-        if (!n || !p || !c) return; encontrouPresoValido = true; if (!numeroMemorandoCapturado) numeroMemorandoCapturado = m;
+        const n = linha.getAttribute('data-nome'); const p = linha.getAttribute('data-prontuario'); const c = linha.getAttribute('data-canteiro');
+        if (!n || !p || !c) return; encontrouPresoValido = true;
         
         let dec = "PENDENTE"; const celV = linha.cells[linha.cells.length - 1]; 
         if (celV) { 
@@ -393,6 +414,37 @@ function prepararEImprimirAtaCTC() {
     setTimeout(function() { window.print(); if (btnImprimir) btnImprimir.disabled = false; carregarDados(); }, 400);
 }
 
+async function exportarExcel() {
+    try {
+        const registrosOriginais = window.dadosPresosCarregadosParaExcel || [];
+        if (registrosOriginais.length === 0) { alert("Não há dados carregados na grade para exportar!"); return; }
+        const sLimpo = String(setorLogadoAtualmente).toLowerCase().normalize("NFD").replace(/[\u0300-\u036f]/g, "").trim();
+
+        let tabelaHtml = `<table border="1" style="border-collapse:collapse;"><thead><tr style="background:#cbd5e1; font-weight:bold;">`;
+        tabelaHtml += `<th>Memorando</th><th>Quem Incluiu</th><th>Nome</th><th>Prontuário</th><th>Canteiro</th>`;
+        tabelaHtml += `<th>Voto (${setorLogadoAtualmente})</th><th>Justificativa (${setorLogadoAtualmente})</th></tr></thead><tbody>`;
+
+        registrosOriginais.forEach(preso => {
+            const avalExclusiva = preso.avaliacoes.find(x => String(x.setor).toLowerCase().normalize("NFD").replace(/[\u0300-\u036f]/g, "").trim() === sLimpo);
+            let decisaoTexto = "Pendente"; let justificativaTexto = "";
+            if (avalExclusiva && avalExclusiva.decisao && avalExclusiva.decisao.toString().trim() !== "DELETAR_VOTO") {
+                decisaoTexto = avalExclusiva.decisao === "BLOQUEIO_SAUDE" || avalExclusiva.decisao === "BLOQUEIO_JURIDICO" ? "BLOQUEAR" : avalExclusiva.decisao;
+                justificativaTexto = (avalExclusiva.observacao || "").replace(/\n/g, " ");
+            }
+            tabelaHtml += `<tr><td>${preso.memorando || ""}</td><td>${preso.quemIncluiu || ""}</td><td>${preso.nome || ""}</td><td>${preso.prontuario || ""}</td><td>${preso.canteiro || ""}</td>`;
+            tabelaHtml += `<td><b>${decisaoTexto}</b></td><td>${justificativaTexto}</td></tr>`;
+        });
+        tabelaHtml += `</tbody></table>`;
+
+        const templateMeta = '<html xmlns:o="urn:schemas-microsoft-com:office:office" xmlns:x="urn:schemas-microsoft-com:office:excel" xmlns="http://w3.org"><head><meta charset="UTF-8"><!--[if gte mso  9]><xml><x:ExcelWorkbook><x:ExcelWorksheets><x:ExcelWorksheet><x:Name>Relatorio Privado</x:Name><x:WorksheetOptions><x:DisplayGridlines/></x:WorksheetOptions></x:Worksheet></x:ExcelWorksheets></x:ExcelWorkbook></xml><![endif]--></head><body>';
+        const conteudoPlanilha = templateMeta + tabelaHtml + "</body></html>";
+        const blobPlanilha = new Blob(["\uFEFF" + conteudoPlanilha], { type: "application/vnd.ms-excel;charset=utf-8" });
+        const linkDownload = document.createElement("a");
+        linkDownload.href = URL.createObjectURL(blobPlanilha);
+        linkDownload.download = `Relatorio_CTC_${setorLogadoAtualmente}.xls`;
+        document.body.appendChild(linkDownload); linkDownload.click(); document.body.removeChild(linkDownload);
+    } catch (err) { alert("Erro técnico ao processar exportação de dados."); }
+}
 function carregarHistoricoDeMemorandos() {
     const sel = document.getElementById('filtroMemorando'); if (!sel) return;
     fetch(`${SCRIPT_URL}?buscar=memorandos&_=${Date.now()}`, { method: "GET", mode: "cors", redirect: "follow" }).then(res => res.json()).then(memos => {
@@ -414,31 +466,24 @@ function excluirCanteiroServidor(n, b) { if (!confirm(`Remover "${n}"?`)) return
 function forcarAtualizacaoGeral() { paginaAtual = 1; carregarDados(); carregarHistoricoDeMemorandos(); }
 function filtrarPorMemorando() { paginaAtual = 1; carregarDados(); }
 
-async function exportarExcel() {
-    try {
-        const tabela = document.getElementById("tabelaMaster");
-        if (!tabela) { alert("Tabela master não localizada na página!"); return; }
-        let htmlClonado = tabela.cloneNode(true);
-        htmlClonado.querySelectorAll("select, textarea, button").forEach(elem => elem.remove());
-        htmlClonado.querySelectorAll("td, th").forEach(cel => {
-            if (cel.innerText) { cel.innerText = cel.innerText.trim().replace(/\n/g, " "); }
-        });
-        const templateMeta = '<html xmlns:o="urn:schemas-microsoft-com:office:office" xmlns:x="urn:schemas-microsoft-com:office:excel" xmlns="http://w3.org"><head><meta charset="UTF-8"><!--[if gte mso  9]><xml><x:ExcelWorkbook><x:ExcelWorksheets><x:ExcelWorksheet><x:Name>Relatorio CTC</x:Name><x:WorksheetOptions><x:DisplayGridlines/></x:WorksheetOptions></x:Worksheet></x:ExcelWorksheets></x:ExcelWorkbook></xml><![endif]--></head><body>';
-        const conteudoPlanilha = templateMeta + htmlClonado.outerHTML + "</body></html>";
-        const blobPlanilha = new Blob(["\uFEFF" + conteudoPlanilha], { type: "application/vnd.ms-excel;charset=utf-8" });
-        const linkDownload = document.createElement("a");
-        linkDownload.href = URL.createObjectURL(blobPlanilha);
-        linkDownload.download = "Relatorio_Presos_CTC.xls";
-        document.body.appendChild(linkDownload);
-        linkDownload.click();
-        document.body.removeChild(linkDownload);
-    } catch (err) {
-        alert("Erro técnico ao processar exportação de dados.");
+// FUNÇÃO MESTRA CENTRAL: Chamada diretamente via escuta de evento HTML5 ligada em data-texto sem travamento
+function abrirModalLeituraParecer(nomeSetor, textoPuro) {
+    const modal = document.getElementById('modalLeituraParecer');
+    const titulo = document.getElementById('tituloModalParecer');
+    const conteudo = document.getElementById('conteudoModalParecer');
+    if (modal && titulo && conteudo) {
+        titulo.innerText = `Parecer Técnico - Setor ${nomeSetor}`;
+        conteudo.innerText = textoPuro;
+        modal.classList.remove('oculto');
     }
+}
+function fecharModalLeituraParecer() {
+    const modal = document.getElementById('modalLeituraParecer');
+    if (modal) modal.classList.add('oculto');
 }
 
 document.addEventListener("DOMContentLoaded", function() {
     inicializarFormularioPreso();
     carregarDados();
 });
-// FIM DO ARQUIVO SCRIPT.JS v8.5 COMPLETO COM SENSOR DISED - PEL2 DEPPEN
+// FIM DO SCRIPT MASTER CONSOLIDADO v8.8 REVISADO E OPERACIONAL PEL2
