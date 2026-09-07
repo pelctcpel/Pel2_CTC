@@ -311,7 +311,7 @@ function carregarDados() {
                         if (classeTarja === "linha-colegiado") {
                             opcoesDiretorHtml = `<option value="" selected disabled>-- Concluir Reunião --</option><option value="SIM">SIM (Aprovar)</option><option value="NÃO">NÃO (Reprovar)</option>`;
                         } else {
-                            opcoesDiretorHtml += `<option value="INTELIGÊNCIA">INTELIGÊNCIA</option><option value="REUNIAO_COLEGIADO">REUNIÃO DE COLEGIADO</option>`;
+                            opcoesDiretorHtml += `<option value="INTELIGÊNCIA">INTELIGÊNCIA</option><option value="REUNIAO_COLEGIADO">REUNIÃO</option>`;
                         }
                         celV = `<select class="select-voto-diretor" style="width:100%; margin-bottom:5px;">${opcoesDiretorHtml}</select><textarea placeholder="Justificativa..."></textarea><button type="button" onclick="salvarVotoDiretorGeral(${preso.id}, this)">Votar</button>`; 
                     }
